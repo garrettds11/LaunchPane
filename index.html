@@ -710,6 +710,7 @@
 
 <input class="sr-only" type="file" id="importFile" accept="application/json,.json">
 <input class="sr-only" type="file" id="bookmarksFile" accept=".html,.htm,text/html">
+<input class="sr-only" type="file" id="chromeSourceJsonFile" accept="application/json,.json">
 <input class="sr-only" type="file" id="backgroundFile" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp,image/avif">
 
 <div class="modal-backdrop" id="importModal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
@@ -746,6 +747,7 @@
     <div class="setting"><label for="overlayRange">Background shading overlay</label><div class="range-line"><input id="overlayRange" type="range" min="0" max="85" value="34"><span class="range-value" id="overlayValue">34%</span></div></div>
     <div class="setting"><label for="accentColor">Accent color</label><input id="accentColor" type="color" value="#377dff" style="padding:4px"></div>
     <div class="drawer-actions"><button class="btn primary" id="applySettings">Apply Settings</button><button class="btn" id="downloadSettings">Export JSON</button></div>
+    <div class="setting" style="margin-top:22px"><label>Chrome bookmarks file</label><button class="btn" id="buildChromeBookmarks">☆ &nbsp;Build from saved JSON</button><small>Choose a LaunchPane JSON export. LaunchPane will download a Chrome-compatible bookmarks HTML file with each group rebuilt as a bookmark folder.</small></div>
     <div class="danger-zone"><button class="btn" id="clearBackground">Clear Background Image</button> <button class="btn" id="resetSession">Reset Dashboard</button></div>
   </div>
 </aside>
@@ -1126,6 +1128,80 @@
 
 
   function exportJson(){state.exportedAt=nowISO();state.metadata.lastExportedAt=state.exportedAt;saveState();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`team-portal-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toastMsg('Dashboard JSON exported');}
+  function chromeBookmarkEscape(value){
+    return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function chromeBookmarkTimestamp(value){
+    const d=new Date(value||Date.now());
+    const ms=Number.isNaN(d.getTime())?Date.now():d.getTime();
+    return String(Math.floor(ms/1000));
+  }
+
+  function buildChromeBookmarksHtml(config){
+    const groups=Array.isArray(config?.groups)?config.groups:[];
+    const created=chromeBookmarkTimestamp(config?.metadata?.createdAt||Date.now());
+    const lines=[
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+      '<!-- This is an automatically generated file.',
+      '     It will be read and overwritten.',
+      '     DO NOT EDIT! -->',
+      '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+      '<TITLE>Bookmarks</TITLE>',
+      '<H1>Bookmarks</H1>',
+      '<DL><p>'
+    ];
+
+    groups.forEach(group=>{
+      const folderName=chromeBookmarkEscape(group.name||'Bookmarks');
+      const folderAdded=chromeBookmarkTimestamp(group.createdAt||created);
+      const folderModified=chromeBookmarkTimestamp(group.updatedAt||group.createdAt||created);
+      lines.push(`    <DT><H3 ADD_DATE="${folderAdded}" LAST_MODIFIED="${folderModified}">${folderName}</H3>`);
+      lines.push('    <DL><p>');
+      (Array.isArray(group.resources)?group.resources:[]).forEach(resource=>{
+        const title=chromeBookmarkEscape(resource.name||resource.url||'Untitled');
+        const href=chromeBookmarkEscape(resource.url||'');
+        if(!href)return;
+        const added=chromeBookmarkTimestamp(resource.createdAt||folderAdded);
+        lines.push(`        <DT><A HREF="${href}" ADD_DATE="${added}">${title}</A>`);
+      });
+      lines.push('    </DL><p>');
+    });
+
+    lines.push('</DL><p>');
+    return lines.join('\n');
+  }
+
+  function downloadChromeBookmarksFromConfig(config){
+    const html=buildChromeBookmarksHtml(config);
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    const stamp=new Date().toISOString().slice(0,10);
+    a.download=`launchpane-chrome-bookmarks-${stamp}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    const count=(Array.isArray(config.groups)?config.groups:[]).reduce((n,g)=>n+(Array.isArray(g.resources)?g.resources.length:0),0);
+    toastMsg(`Chrome bookmarks file built from ${count} resource${count===1?'':'s'}`);
+  }
+
+  function buildChromeBookmarksFromJsonFile(file){
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onerror=()=>alert('Could not read this LaunchPane JSON file.');
+    reader.onload=()=>{
+      try{
+        const config=sanitizeState(JSON.parse(reader.result));
+        downloadChromeBookmarksFromConfig(config);
+      }catch(e){
+        alert('Could not build Chrome bookmarks from this JSON file:\n'+e.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function importJsonFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const imported=sanitizeState(JSON.parse(reader.result));imported.metadata.lastImportedAt=nowISO();state=imported;selectedGroupId=state.dashboard.selectedGroupId||'favorites';saveState();render();hideImportModal();toastMsg('Configuration imported');}catch(e){alert('Could not import this JSON file:\n'+e.message);}};reader.readAsText(file);}
   function chromeFolderDlForHeading(h3){
     const parent=h3.parentElement;
@@ -1243,13 +1319,13 @@
   $('#addResourceBtn').addEventListener('click',addResource); $('#resourceUrl').addEventListener('keydown',e=>{if(e.key==='Enter')addResource();}); $('#resourceIconBtn').addEventListener('click',e=>{e.stopPropagation();$('#iconPicker').classList.contains('show')?hideIconPicker():showIconPicker();}); ['resourceName','resourceUrl'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(pendingIconChoice.mode==='auto')updateIconPreview();})); $('#newGroupBtn').addEventListener('click',showNewGroupModal);
   $('#createGroupBtn').addEventListener('click',createGroup); $('#closeNewGroup').addEventListener('click',hideNewGroupModal); $('#cancelNewGroup').addEventListener('click',hideNewGroupModal); $('#newGroupName').addEventListener('keydown',e=>{if(e.key==='Enter')createGroup();if(e.key==='Escape')hideNewGroupModal();});
   $('#importBtn').addEventListener('click',showImportModal); $('#chooseImport').addEventListener('click',()=>$('#importFile').click()); $('#chooseBookmarksImport').addEventListener('click',()=>$('#bookmarksFile').click()); $('#closeImport').addEventListener('click',hideImportModal); $('#skipImport').addEventListener('click',hideImportModal); $('#importFile').addEventListener('change',e=>{importJsonFile(e.target.files[0]);e.target.value='';}); $('#bookmarksFile').addEventListener('change',e=>{importChromeBookmarksFile(e.target.files[0]);e.target.value='';});
-  $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson);
+  $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson); $('#buildChromeBookmarks').addEventListener('click',()=>$('#chromeSourceJsonFile').click()); $('#chromeSourceJsonFile').addEventListener('change',e=>{buildChromeBookmarksFromJsonFile(e.target.files[0]);e.target.value='';});
   $('#settingsBtn').addEventListener('click',openSettings); $('#closeSettings').addEventListener('click',closeSettings); $('#applySettings').addEventListener('click',applySettings);
   $('#pickBackground').addEventListener('click',()=>$('#backgroundFile').click()); $('#backgroundFile').addEventListener('change',e=>{backgroundUpload(e.target.files[0]);e.target.value='';}); $('#clearBackground').addEventListener('click',clearBackground);
   $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
   $('#heroTitle').addEventListener('input',()=>{state.dashboard.title=$('#heroTitle').value;adjustHeroFont();saveState();}); $('#heroTitle').addEventListener('change',render);
   $('#resetSession').addEventListener('click',()=>{if(confirm('Reset this session to the default dashboard?')){sessionStorage.removeItem(STORAGE_KEY);state=defaultState();selectedGroupId='favorites';commit('Dashboard reset');closeSettings();}});
-  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Drag a resource tile onto another group to move it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import LaunchPane JSON or standard Chrome bookmark HTML files.\n• Import/export JSON for complete configuration portability.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
+  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Drag a resource tile onto another group to move it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import LaunchPane JSON or standard Chrome bookmark HTML files.\n• Import/export JSON for complete configuration portability.\n• Settings can rebuild a Chrome-compatible bookmarks HTML file from a saved LaunchPane JSON export.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
   contextMenu.addEventListener('click',e=>{const item=e.target.closest('[data-action]');if(item)contextAction(item.dataset.action);});
   document.addEventListener('click',e=>{if(!e.target.closest('#contextMenu'))hideContext();if(!e.target.closest('#iconPicker')&&!e.target.closest('#resourceIconBtn'))hideIconPicker();}); $('#newGroupModal').addEventListener('click',e=>{if(e.target===$('#newGroupModal'))hideNewGroupModal();}); window.addEventListener('blur',hideContext); window.addEventListener('resize',hideContext); document.addEventListener('scroll',hideContext,true);
 
