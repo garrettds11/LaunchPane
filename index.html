@@ -277,7 +277,7 @@
 
   /* ===== Precision polish pass: minimal glass + true squircle geometry ===== */
   .toolbar{
-    grid-template-columns:minmax(170px,.9fr) minmax(250px,1.35fr) auto repeat(5,auto);
+    grid-template-columns:minmax(170px,.9fr) minmax(250px,1.35fr) auto repeat(6,auto);
     gap:9px;min-height:68px;padding:10px 12px 11px;border:0;border-radius:18px;
     background:rgba(242,248,254,.40);
     box-shadow:0 8px 26px rgba(8,31,55,.11),inset 0 1px 0 rgba(255,255,255,.50);
@@ -361,7 +361,7 @@
 
   @media (min-width:1321px){.resource-grid{grid-template-columns:repeat(8,minmax(0,158px));justify-content:space-between}}
   @media (max-width:1320px){
-    .toolbar{grid-template-columns:minmax(150px,.85fr) minmax(220px,1.25fr) auto repeat(3,auto)}
+    .toolbar{grid-template-columns:minmax(150px,.85fr) minmax(220px,1.25fr) auto repeat(4,auto)}
     .toolbar .optional-wide{display:none}
     .resource-grid{grid-template-columns:repeat(7,minmax(0,1fr))}
   }
@@ -370,7 +370,7 @@
     .group-meta{display:none}
   }
   @media (max-width:900px){
-    .toolbar{grid-template-columns:minmax(145px,.9fr) minmax(210px,1.25fr) auto auto 42px 42px}
+    .toolbar{grid-template-columns:minmax(145px,.9fr) minmax(210px,1.25fr) auto auto 42px auto 42px}
     #newGroupBtn,#settingsBtn{width:42px;padding:0}
     #newGroupBtn span,#settingsBtn span{display:none}
     .resource-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
@@ -389,9 +389,10 @@
     .toolbar #addResourceBtn{grid-column:1/4}
     .toolbar #resourceIconBtn{grid-column:4/5;min-width:0;width:auto;padding:0!important}
     .toolbar #resourceIconBtn .toolbar-icon-label{display:none}
-    .toolbar #newGroupBtn{grid-column:5/6}
-    .toolbar #settingsBtn{grid-column:6/7}
-    .toolbar #newGroupBtn,.toolbar #settingsBtn{width:auto;min-width:0;padding:0}
+    .toolbar #importBookmarksBtn{grid-column:5/6;min-width:0;padding:0}
+    .toolbar #newGroupBtn{grid-column:6/7}
+    .toolbar #settingsBtn{grid-column:1/2}
+    .toolbar #newGroupBtn,.toolbar #settingsBtn,.toolbar #importBookmarksBtn{width:auto;min-width:0;padding:0}
     .toolbar .btn:not(.primary):not(.icon-choice-btn) span{display:none}
     .hero{width:96vw;margin:18px auto 28px;padding:8px 14px}
     .hero .tagline{font-size:10px;letter-spacing:.17em}
@@ -678,6 +679,7 @@
     <button class="btn primary" id="addResourceBtn" title="Add resource to selected group">＋ <span>Add Resource</span></button>
     <button class="btn" id="newGroupBtn">＋ <span>New Group</span></button>
     <button class="btn optional-wide" id="importBtn">⇧ <span>Import JSON</span></button>
+    <button class="btn" id="importBookmarksBtn" title="Import Chrome bookmarks HTML">☆ <span>Bookmarks</span></button>
     <button class="btn optional-wide" id="exportBtn">⇩ <span>Export JSON</span></button>
     <button class="btn" id="settingsBtn">⚙ <span>Settings</span></button>
   </section>
@@ -1318,7 +1320,7 @@
 
   $('#addResourceBtn').addEventListener('click',addResource); $('#resourceUrl').addEventListener('keydown',e=>{if(e.key==='Enter')addResource();}); $('#resourceIconBtn').addEventListener('click',e=>{e.stopPropagation();$('#iconPicker').classList.contains('show')?hideIconPicker():showIconPicker();}); ['resourceName','resourceUrl'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(pendingIconChoice.mode==='auto')updateIconPreview();})); $('#newGroupBtn').addEventListener('click',showNewGroupModal);
   $('#createGroupBtn').addEventListener('click',createGroup); $('#closeNewGroup').addEventListener('click',hideNewGroupModal); $('#cancelNewGroup').addEventListener('click',hideNewGroupModal); $('#newGroupName').addEventListener('keydown',e=>{if(e.key==='Enter')createGroup();if(e.key==='Escape')hideNewGroupModal();});
-  $('#importBtn').addEventListener('click',showImportModal); $('#chooseImport').addEventListener('click',()=>$('#importFile').click()); $('#chooseBookmarksImport').addEventListener('click',()=>$('#bookmarksFile').click()); $('#closeImport').addEventListener('click',hideImportModal); $('#skipImport').addEventListener('click',hideImportModal); $('#importFile').addEventListener('change',e=>{importJsonFile(e.target.files[0]);e.target.value='';}); $('#bookmarksFile').addEventListener('change',e=>{importChromeBookmarksFile(e.target.files[0]);e.target.value='';});
+  $('#importBtn').addEventListener('click',showImportModal); $('#importBookmarksBtn').addEventListener('click',()=>$('#bookmarksFile').click()); $('#chooseImport').addEventListener('click',()=>$('#importFile').click()); $('#chooseBookmarksImport').addEventListener('click',()=>$('#bookmarksFile').click()); $('#closeImport').addEventListener('click',hideImportModal); $('#skipImport').addEventListener('click',hideImportModal); $('#importFile').addEventListener('change',e=>{importJsonFile(e.target.files[0]);e.target.value='';}); $('#bookmarksFile').addEventListener('change',e=>{importChromeBookmarksFile(e.target.files[0]);e.target.value='';});
   $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson); $('#buildChromeBookmarks').addEventListener('click',()=>$('#chromeSourceJsonFile').click()); $('#chromeSourceJsonFile').addEventListener('change',e=>{buildChromeBookmarksFromJsonFile(e.target.files[0]);e.target.value='';});
   $('#settingsBtn').addEventListener('click',openSettings); $('#closeSettings').addEventListener('click',closeSettings); $('#applySettings').addEventListener('click',applySettings);
   $('#pickBackground').addEventListener('click',()=>$('#backgroundFile').click()); $('#backgroundFile').addEventListener('change',e=>{backgroundUpload(e.target.files[0]);e.target.value='';}); $('#clearBackground').addEventListener('click',clearBackground);
