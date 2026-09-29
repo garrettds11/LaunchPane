@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Team Portal</title>
+<meta name="license" content="Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)">
+<style>
+  :root{
+    --accent:#3d7cff;
+    --accent-rgb:61,124,255;
+    --text:#10213d;
+    --muted:#6d7f95;
+    --bg-color:rgb(113,157,198);
+    --overlay:rgba(8,26,48,.32);
+    --page-max:1540px;
+    --glass-light:rgba(237,246,255,.66);
+    --glass-light-2:rgba(210,229,247,.48);
+    --glass-dark:rgba(23,55,87,.50);
+    --glass-dark-2:rgba(41,74,108,.42);
+    --hairline:rgba(255,255,255,.28);
+    --soft-shadow:0 14px 36px rgba(8,34,60,.16);
+    --deep-shadow:0 22px 54px rgba(7,29,54,.20);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100%}
+  html{background:#23435d}
+  body{
+    margin:0;color:var(--text);
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:transparent;overflow-x:hidden;
+  }
+  .background-layer{
+    position:fixed;inset:0;z-index:0;pointer-events:none;background-color:var(--bg-color);
+    background-image:var(--background-image,none),
+      radial-gradient(circle at 18% 14%,rgba(255,255,255,.40),transparent 24%),
+      radial-gradient(circle at 77% 16%,rgba(255,201,179,.28),transparent 25%),
+      linear-gradient(152deg,#8fc2ef 0%,#6d96c2 30%,#456f89 58%,#1b3e57 100%);
+    background-size:var(--background-size,cover),cover,cover,cover;
+    background-position:var(--background-position,center),center,center,center;
+    background-repeat:no-repeat;
+    transform:scale(1.01);
+  }
+  .background-shade{position:fixed;inset:0;z-index:1;pointer-events:none;background:var(--overlay);transition:background .12s linear}
+  button,input,select,textarea{font:inherit}button{cursor:pointer}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(var(--accent-rgb),.26);outline-offset:2px}
+  .app{position:relative;z-index:2;width:min(calc(100% - 48px),var(--page-max));margin:0 auto;padding:24px 0 104px}
+  .glass{
+    background:linear-gradient(135deg,var(--glass-light),var(--glass-light-2));
+    border:1px solid rgba(255,255,255,.52);box-shadow:var(--soft-shadow);
+    backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35)
+  }
+  .toolbar{
+    display:grid;grid-template-columns:minmax(180px,1fr) minmax(285px,1.45fr) repeat(6,auto);
+    gap:12px;padding:16px 18px;border-radius:22px;align-items:end;position:sticky;top:14px;z-index:80;
+    min-height:84px
+  }
+  .field label,.setting label{display:block;font-size:12px;font-weight:750;margin:0 0 7px;color:#34516d}
+  .field input,.setting input,.setting select{
+    width:100%;height:48px;border:1px solid rgba(98,132,168,.25);border-radius:11px;
+    background:rgba(255,255,255,.74);padding:0 14px;color:var(--text);
+    box-shadow:inset 0 1px 2px rgba(34,70,104,.04),0 1px 0 rgba(255,255,255,.35)
+  }
+  .btn{
+    height:48px;border:1px solid rgba(102,139,176,.20);border-radius:11px;padding:0 18px;
+    background:rgba(248,252,255,.72);color:#234260;font-weight:760;
+    box-shadow:0 8px 18px rgba(42,77,113,.08),inset 0 1px 0 rgba(255,255,255,.55);
+    display:inline-flex;gap:9px;align-items:center;justify-content:center;white-space:nowrap;transition:.16s ease
+  }
+  .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.92);box-shadow:0 11px 24px rgba(34,69,104,.12)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 11px 26px rgba(var(--accent-rgb),.34)}
+  .btn.icon{width:48px;padding:0}
+  .hero{
+    width:min(940px,66vw);min-height:120px;margin:20px auto 52px;padding:20px 42px 22px;border-radius:24px;text-align:center;
+    background:linear-gradient(135deg,rgba(232,243,255,.30),rgba(183,207,232,.19));
+    border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 34px rgba(10,34,59,.13),inset 0 1px 0 rgba(255,255,255,.15);
+    backdrop-filter:blur(22px) saturate(1.20);-webkit-backdrop-filter:blur(22px) saturate(1.20)
+  }
+  .hero input{width:100%;border:0;background:transparent;text-align:center;font-weight:730;letter-spacing:-.035em;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.20);padding:3px 10px;line-height:1.08}
+  .hero input::placeholder{color:rgba(255,255,255,.72)}
+  .hero .tagline{margin-top:8px;font-size:14px;letter-spacing:.30em;color:rgba(255,255,255,.90);font-weight:650;text-shadow:0 2px 10px rgba(0,0,0,.14)}
+  .groups{display:flex;flex-direction:column;gap:12px}
+  .group{
+    border-radius:25px;background:linear-gradient(135deg,var(--glass-dark),var(--glass-dark-2));
+    border:1px solid rgba(255,255,255,.28);box-shadow:var(--deep-shadow);
+    backdrop-filter:blur(23px) saturate(1.18);-webkit-backdrop-filter:blur(23px) saturate(1.18);overflow:hidden
+  }
+  .group:first-child{background:linear-gradient(135deg,rgba(18,50,82,.58),rgba(38,72,106,.47));border-color:rgba(255,255,255,.31)}
+  .group-header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:13px;min-height:70px;padding:0 18px;color:#fff}
+  .group-badge{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:19px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+  .group-title-wrap{min-width:0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .group-title{font-size:20px;font-weight:780;text-shadow:0 2px 10px rgba(0,0,0,.14)}
+  .group-meta{font-size:12px;color:rgba(238,247,255,.73);white-space:nowrap}
+  .group-controls{display:flex;align-items:center;gap:6px}
+  .mini-btn{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:#dbeeff;font-size:15px;display:grid;place-items:center;transition:.15s ease}
+  .mini-btn:hover{background:rgba(255,255,255,.10)}.mini-btn:disabled{opacity:.28;cursor:default}
+  .collapse-pill{height:38px;min-width:118px;border-radius:12px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.09);color:#edf6ff;padding:0 13px;font-weight:700}
+  .group-content{padding:0 22px 22px;border-top:1px solid rgba(255,255,255,.12)}
+  .group.collapsed .group-content{display:none}
+  .resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:16px;padding-top:20px}
+  .resource-card{
+    position:relative;min-height:158px;max-height:168px;border-radius:25px;border:1px solid rgba(255,255,255,.72);
+    background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(241,247,253,.90));
+    box-shadow:0 10px 22px rgba(14,42,68,.13),inset 0 1px 0 rgba(255,255,255,.86);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 12px 15px;
+    transition:transform .17s ease,box-shadow .17s ease,background .17s ease;user-select:none;overflow:hidden
+  }
+  .resource-card:hover{transform:translateY(-4px);background:linear-gradient(145deg,#fff,rgba(244,249,255,.96));box-shadow:0 16px 30px rgba(11,39,67,.20),0 0 0 2px rgba(var(--accent-rgb),.12)}
+  .resource-card.selected{outline:3px solid rgba(var(--accent-rgb),.78);outline-offset:-2px}
+  .resource-icon{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;margin-bottom:11px;filter:drop-shadow(0 8px 11px rgba(23,52,83,.13))}
+  .resource-icon svg{width:58px;height:58px;display:block}
+  .resource-name{font-size:16px;font-weight:780;color:#14253f;text-align:center;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+  .resource-meta{display:flex;gap:6px;align-items:center;margin-top:11px;color:#728399;font-size:11px;font-weight:620}
+  .resource-tooltip{pointer-events:none;position:fixed;z-index:9999;max-width:min(380px,80vw);background:#172236;color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;box-shadow:0 12px 28px rgba(0,0,0,.28);opacity:0;transform:translate(-50%,-10px);transition:opacity .12s ease;word-break:break-all}
+  .resource-tooltip.show{opacity:1}
+  .empty-state{padding:22px 4px 4px;color:rgba(240,248,255,.78);font-size:13px;text-align:center}
+  .context-menu{position:fixed;z-index:10000;display:none;width:200px;padding:7px;background:rgba(255,255,255,.96);border:1px solid rgba(49,83,116,.13);border-radius:13px;box-shadow:0 22px 48px rgba(12,31,54,.28);backdrop-filter:blur(18px)}
+  .context-menu.show{display:block}.menu-item{height:40px;width:100%;border:0;border-radius:9px;background:transparent;display:flex;align-items:center;gap:10px;padding:0 10px;color:#213a56;text-align:left;font-weight:650;font-size:13px}.menu-item:hover{background:#eef4fb}.menu-item.danger{color:#d83646}
+  .footer{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:9px 20px 13px;background:linear-gradient(to top,rgba(13,38,62,.35),rgba(13,38,62,.06));backdrop-filter:blur(7px);color:rgba(244,249,255,.90);display:grid;grid-template-columns:1fr auto 1fr;align-items:end;font-size:11px;pointer-events:none}
+  .footer .left{justify-self:start}.footer .center{text-align:center;line-height:1.45;text-shadow:0 1px 7px rgba(0,0,0,.28)}.footer .right{justify-self:end}.footer>*{pointer-events:auto}.footer a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  .footer-btn{height:34px;padding:0 11px;border-radius:10px;border:1px solid rgba(255,255,255,.20);background:rgba(20,54,85,.30);backdrop-filter:blur(10px);color:#fff;font-weight:700}
+  .modal-backdrop{position:fixed;inset:0;z-index:9000;background:rgba(10,26,46,.16);display:none;align-items:flex-start;justify-content:center;padding-top:28vh;backdrop-filter:blur(3px)}
+  .modal-backdrop.show{display:flex}
+  .modal{width:min(480px,calc(100vw - 28px));border-radius:20px;background:rgba(255,255,255,.97);box-shadow:0 30px 66px rgba(8,28,51,.30);border:1px solid rgba(255,255,255,.76);padding:22px;color:var(--text)}
+  .modal-head{display:flex;gap:16px;align-items:flex-start}.modal-icon{width:70px;height:70px;border-radius:17px;background:#eff5fb;display:grid;place-items:center;color:var(--accent);flex:0 0 auto;font-size:30px}.modal h2{margin:3px 0 6px;font-size:21px}.modal p{margin:0;color:#718096;line-height:1.46;font-size:13px}.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  .close{margin-left:auto;border:0;background:transparent;color:#65788d;font-size:20px}
+  .drawer{position:fixed;inset:0 0 0 auto;width:min(500px,100vw);z-index:9500;background:rgba(244,249,255,.95);box-shadow:-26px 0 64px rgba(6,28,53,.28);transform:translateX(100%);transition:.25s ease;backdrop-filter:blur(28px);overflow:auto}
+  .drawer.show{transform:none}.drawer-inner{padding:26px}.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.drawer h2{margin:0}.setting{margin:0 0 18px}.setting-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.setting small{display:block;color:#718096;margin-top:6px;line-height:1.4}.range-line{display:flex;gap:12px;align-items:center}.range-line input{flex:1}.range-value{width:46px;text-align:right;color:#57708c;font-weight:700}.drawer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.danger-zone{margin-top:26px;padding-top:18px;border-top:1px solid #d9e4ef}
+  .toast{position:fixed;right:20px;bottom:76px;z-index:11000;background:rgba(16,34,55,.94);color:#fff;border-radius:12px;padding:11px 14px;box-shadow:0 16px 38px rgba(4,20,39,.26);font-size:13px;opacity:0;transform:translateY(10px);pointer-events:none;transition:.18s ease}.toast.show{opacity:1;transform:none}
+  .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+  /* ===== Visual polish pass: target-concept glass system ===== */
+  :root{
+    --glass-top:rgba(240,248,255,.56);
+    --glass-top-soft:rgba(219,234,248,.42);
+    --glass-top-border:rgba(255,255,255,.58);
+    --glass-group-a:rgba(20,50,79,.46);
+    --glass-group-b:rgba(37,70,102,.37);
+    --glass-group-border:rgba(255,255,255,.24);
+    --accent-soft:rgba(var(--accent-rgb),.12);
+    --accent-wash:rgba(var(--accent-rgb),.075);
+    --accent-border:rgba(var(--accent-rgb),.34);
+    --accent-shadow:rgba(var(--accent-rgb),.20);
+  }
+
+  .app{width:min(calc(100% - 44px),1580px);padding-top:22px}
+
+  /* The toolbar and greeting intentionally use a brighter two-layer glass than groups. */
+  .toolbar,.hero{position:relative;isolation:isolate;overflow:hidden}
+  .toolbar::before,.hero::before{
+    content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.035) 56%),
+      linear-gradient(135deg,var(--glass-top),var(--glass-top-soft));
+    backdrop-filter:blur(26px) saturate(1.32);-webkit-backdrop-filter:blur(26px) saturate(1.32)
+  }
+  .toolbar::after,.hero::after{
+    content:"";position:absolute;inset:1px;z-index:-1;pointer-events:none;border-radius:inherit;
+    background:
+      radial-gradient(circle at 14% 0%,rgba(255,255,255,.30),transparent 28%),
+      linear-gradient(115deg,rgba(var(--accent-rgb),.035),transparent 42%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.56),inset 0 -1px 0 rgba(255,255,255,.08)
+  }
+
+  .toolbar{
+    background:transparent;border-color:var(--glass-top-border);
+    min-height:86px;padding:16px 18px 15px;border-radius:22px;
+    box-shadow:0 14px 36px rgba(11,35,60,.14),0 2px 8px rgba(11,35,60,.05)
+  }
+  .toolbar .field label{font-size:11px;letter-spacing:.01em;color:#2f4e6b;margin-bottom:6px}
+  .field input,.setting input,.setting select{
+    background:rgba(255,255,255,.72);border-color:rgba(84,119,153,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.76),0 1px 2px rgba(34,70,104,.045)
+  }
+  .field input:hover,.setting input:hover,.setting select:hover{border-color:rgba(var(--accent-rgb),.22)}
+  .field input:focus,.setting input:focus,.setting select:focus{
+    border-color:rgba(var(--accent-rgb),.48);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.10),inset 0 1px 0 rgba(255,255,255,.78)
+  }
+
+  .btn{
+    border-color:rgba(88,123,157,.16);background:rgba(250,253,255,.70);
+    box-shadow:0 7px 18px rgba(36,70,104,.075),inset 0 1px 0 rgba(255,255,255,.70)
+  }
+  .btn:hover{
+    background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(var(--accent-rgb),.055));
+    border-color:rgba(var(--accent-rgb),.22);box-shadow:0 10px 24px rgba(31,64,98,.11),0 0 0 1px rgba(var(--accent-rgb),.045)
+  }
+  .btn.primary{
+    background:linear-gradient(180deg,rgba(255,255,255,.09),transparent 34%),var(--accent);
+    box-shadow:0 11px 26px rgba(var(--accent-rgb),.30),inset 0 1px 0 rgba(255,255,255,.22)
+  }
+  .btn.primary:hover{filter:saturate(1.04) brightness(1.03);box-shadow:0 14px 30px rgba(var(--accent-rgb),.34),inset 0 1px 0 rgba(255,255,255,.25)}
+  #backgroundBtn,#settingsBtn{background:linear-gradient(180deg,rgba(255,255,255,.76),rgba(var(--accent-rgb),.055));border-color:rgba(var(--accent-rgb),.15)}
+
+  .hero{
+    width:min(930px,62vw);min-height:116px;margin:20px auto 76px;padding:18px 42px 20px;
+    background:transparent;border-color:rgba(255,255,255,.36);
+    box-shadow:0 16px 38px rgba(10,34,59,.13),0 2px 8px rgba(10,34,59,.04)
+  }
+  .hero input{font-weight:700;letter-spacing:-.032em;text-shadow:0 2px 16px rgba(0,0,0,.19)}
+  .hero .tagline{font-size:13px;letter-spacing:.27em;font-weight:620;color:rgba(255,255,255,.91)}
+
+  .groups{gap:12px}
+  .group{
+    position:relative;isolation:isolate;background:linear-gradient(135deg,var(--glass-group-a),var(--glass-group-b));
+    border-color:var(--glass-group-border);box-shadow:0 20px 48px rgba(8,29,52,.18),inset 0 1px 0 rgba(255,255,255,.05)
+  }
+  .group::before{
+    content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),transparent 36%),linear-gradient(118deg,rgba(var(--accent-rgb),.035),transparent 34%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.075)
+  }
+  .group:first-child{
+    background:linear-gradient(135deg,rgba(16,47,78,.50),rgba(37,71,105,.40));
+    border-color:rgba(255,255,255,.28)
+  }
+  .group.selected{border-color:var(--accent-border);box-shadow:0 20px 48px rgba(8,29,52,.18),0 0 0 1px rgba(var(--accent-rgb),.09),inset 0 1px 0 rgba(255,255,255,.06)}
+  .group-header{min-height:68px;padding-inline:17px}
+  .group-badge{
+    background:linear-gradient(145deg,rgba(var(--accent-rgb),.19),rgba(255,255,255,.085));
+    border:1px solid rgba(var(--accent-rgb),.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 6px 14px rgba(8,29,52,.10)
+  }
+  .group:first-child .group-badge{color:#ffd65f;background:linear-gradient(145deg,rgba(var(--accent-rgb),.18),rgba(255,214,95,.09))}
+  .group-title{font-size:19px;font-weight:750;letter-spacing:-.015em}
+  .group-meta{font-size:11px;color:rgba(239,247,255,.70)}
+  .mini-btn:hover{background:rgba(var(--accent-rgb),.13);color:#fff}
+  .collapse-pill{
+    background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(var(--accent-rgb),.055));
+    border-color:rgba(255,255,255,.18);transition:.15s ease
+  }
+  .collapse-pill:hover{background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(var(--accent-rgb),.12));border-color:rgba(var(--accent-rgb),.30)}
+  .group.selected .collapse-pill{border-color:rgba(var(--accent-rgb),.28);box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.045)}
+  .group-content{padding:0 21px 21px;border-top-color:rgba(255,255,255,.105)}
+
+  .resource-grid{gap:15px;padding-top:19px}
+  .resource-card{
+    min-height:156px;max-height:164px;border-radius:24px;
+    border-color:rgba(255,255,255,.58);
+    background:linear-gradient(145deg,rgba(255,255,255,.91),rgba(239,247,253,.88));
+    box-shadow:0 9px 20px rgba(12,39,64,.115),inset 0 1px 0 rgba(255,255,255,.90)
+  }
+  .resource-card::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 42%);opacity:.8
+  }
+  .resource-card:hover{
+    transform:translateY(-3px);border-color:rgba(var(--accent-rgb),.28);
+    background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(242,248,254,.94));
+    box-shadow:0 15px 30px rgba(10,36,63,.18),0 0 0 2px rgba(var(--accent-rgb),.075),inset 0 1px 0 rgba(255,255,255,.95)
+  }
+  .resource-card.selected{outline:2px solid rgba(var(--accent-rgb),.70);box-shadow:0 14px 30px rgba(10,36,63,.17),0 0 0 4px rgba(var(--accent-rgb),.09)}
+  .resource-icon{margin-bottom:10px}
+  .resource-name{font-size:15px;font-weight:760;letter-spacing:-.01em}
+  .resource-meta{margin-top:10px;color:#72849a}
+
+  .context-menu{border-color:rgba(var(--accent-rgb),.13);box-shadow:0 22px 48px rgba(12,31,54,.24),0 0 0 1px rgba(255,255,255,.54)}
+  .menu-item:hover{background:rgba(var(--accent-rgb),.085);color:#17395e}
+  .resource-tooltip{background:rgba(18,31,51,.96);border:1px solid rgba(var(--accent-rgb),.16)}
+
+  .modal-icon{background:rgba(var(--accent-rgb),.10);box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.08)}
+  .drawer{background:rgba(245,250,255,.935);border-left:1px solid rgba(var(--accent-rgb),.10)}
+  .drawer-head{padding-bottom:14px;border-bottom:1px solid rgba(var(--accent-rgb),.08)}
+  input[type="range"]{accent-color:var(--accent)}
+  input[type="color"]{border:1px solid rgba(var(--accent-rgb),.18)!important;background:rgba(var(--accent-rgb),.055)!important}
+
+  .footer{
+    background:linear-gradient(to top,rgba(12,35,57,.24),rgba(12,35,57,.035));
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);padding-bottom:12px
+  }
+  .footer .center{color:rgba(247,251,255,.88)}
+  .footer .center a{text-decoration-color:rgba(var(--accent-rgb),.75);text-decoration-thickness:1.5px}
+  .footer-btn{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(var(--accent-rgb),.08));border-color:rgba(var(--accent-rgb),.18)}
+
+  @media (min-width:1450px){.resource-grid{grid-template-columns:repeat(8,minmax(0,1fr))}}
+  @media (max-width:1180px){.toolbar{grid-template-columns:1fr 1fr repeat(3,auto)}.toolbar .optional-wide{display:none}.hero{width:min(860px,78vw)}}
+  @media (max-width:760px){.app{width:min(calc(100% - 16px),var(--page-max));padding-top:8px}.toolbar{position:relative;top:0;grid-template-columns:1fr 1fr}.toolbar .field{grid-column:span 1}.toolbar .btn{padding:0 10px}.hero{width:94vw;margin:16px auto 24px;padding-inline:18px}.group-header{grid-template-columns:auto 1fr}.group-controls{grid-column:1/-1;justify-content:flex-end;padding-bottom:10px}.resource-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.resource-card{min-height:142px}.footer{position:relative;margin-top:28px;grid-template-columns:1fr;gap:8px;text-align:center;background:rgba(13,38,62,.16)}.footer .left,.footer .right{justify-self:center}.footer .center{order:-1}.setting-row{grid-template-columns:1fr}}
+
+  /* ===== Precision polish pass: minimal glass + true squircle geometry ===== */
+  .toolbar{
+    grid-template-columns:minmax(170px,.9fr) minmax(250px,1.35fr) auto repeat(5,auto);
+    gap:9px;min-height:68px;padding:10px 12px 11px;border:0;border-radius:18px;
+    background:rgba(242,248,254,.40);
+    box-shadow:0 8px 26px rgba(8,31,55,.11),inset 0 1px 0 rgba(255,255,255,.50);
+    backdrop-filter:blur(16px) saturate(1.18);-webkit-backdrop-filter:blur(16px) saturate(1.18);
+    overflow:visible
+  }
+  .toolbar::before{
+    content:"";position:absolute;inset:1px;z-index:-1;border-radius:17px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.01) 60%);
+    backdrop-filter:none;-webkit-backdrop-filter:none
+  }
+  .toolbar::after{display:none}
+  .toolbar .field label{font-size:10px;margin-bottom:4px;color:#31506d;font-weight:720}
+  .field input{height:42px;border:0;border-radius:10px;background:rgba(255,255,255,.66);box-shadow:inset 0 1px 1px rgba(26,57,88,.05),0 1px 0 rgba(255,255,255,.42)}
+  .toolbar .btn{height:42px;border:0;border-radius:10px;padding:0 14px;box-shadow:0 4px 12px rgba(28,61,92,.07),inset 0 1px 0 rgba(255,255,255,.58)}
+  .toolbar .btn.primary{box-shadow:0 7px 18px rgba(var(--accent-rgb),.26),inset 0 1px 0 rgba(255,255,255,.18)}
+  .icon-choice-btn{height:42px;min-width:66px;padding:0 10px!important;gap:7px!important}
+  .toolbar-icon-preview{width:24px;height:24px;display:grid;place-items:center;flex:0 0 auto}
+  .toolbar-icon-preview svg,.toolbar-icon-preview img{width:24px;height:24px;display:block;object-fit:contain}
+  .toolbar-icon-label{font-size:12px}
+
+  /* The greeting is intentionally typography-only: no glass pane. */
+  .hero,.hero::before,.hero::after{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .hero::before,.hero::after{display:none!important}
+  .hero{width:min(1000px,78vw);min-height:92px;margin:28px auto 60px;padding:12px 32px;text-align:center;overflow:visible}
+  .hero input{text-shadow:0 2px 18px rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.20);font-weight:680}
+  .hero .tagline{margin-top:5px;text-shadow:0 2px 12px rgba(0,0,0,.24);font-size:13px;letter-spacing:.24em}
+
+  /* Group panes stay darker than the toolbar but lose hard borders. */
+  .group,.group:first-child{border:0;box-shadow:0 16px 42px rgba(6,26,48,.17),inset 0 1px 0 rgba(255,255,255,.075)}
+  .group{background:linear-gradient(135deg,rgba(18,49,79,.47),rgba(36,70,102,.34))}
+  .group:first-child{background:linear-gradient(135deg,rgba(16,47,78,.53),rgba(37,71,105,.39))}
+  .group.selected{border:0;box-shadow:0 16px 42px rgba(6,26,48,.17),inset 0 1px 0 rgba(255,255,255,.075)}
+  .group-header{min-height:64px;padding:0 18px;gap:10px}
+  .group-badge{width:28px;height:28px;border:0;border-radius:0;background:none!important;box-shadow:none!important;color:#fff}
+  .group-badge svg{width:25px;height:25px;display:block;overflow:visible;filter:drop-shadow(0 3px 6px rgba(0,0,0,.12))}
+  .group:first-child .group-badge{background:none!important;border:0!important}
+  .group-title{font-size:18px;font-weight:735}
+  .group-title-wrap{gap:10px}
+  .group-content{padding:0 18px 18px;border-top-color:rgba(255,255,255,.08)}
+  .collapse-pill{height:34px;min-width:104px;border:0;border-radius:10px;background:rgba(255,255,255,.075)}
+
+  /* True superellipse clipping, rather than a rounded rectangle. */
+  .resource-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:14px;padding-top:18px}
+  .resource-card{
+    aspect-ratio:1/1;min-height:0;max-height:none;border:0!important;border-radius:29%;corner-shape:squircle;
+    clip-path:url(#resourceSquircle);
+    background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,247,253,.90));
+    box-shadow:none;filter:drop-shadow(0 8px 14px rgba(9,34,58,.13));
+    padding:13px 10px 12px;overflow:hidden
+  }
+  .resource-card::before{border-radius:0;clip-path:url(#resourceSquircle)}
+  .resource-card:hover{
+    transform:translateY(-3px) scale(1.012);border:0!important;outline:0;
+    box-shadow:none;filter:drop-shadow(0 12px 20px rgba(8,32,57,.19)) drop-shadow(0 0 5px rgba(var(--accent-rgb),.13));
+    background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(241,248,254,.95))
+  }
+  .resource-card.selected{outline:0;box-shadow:none;filter:drop-shadow(0 11px 19px rgba(8,32,57,.18)) drop-shadow(0 0 6px rgba(var(--accent-rgb),.34))}
+  .resource-icon{width:52px;height:52px;margin-bottom:8px;border-radius:0;filter:none}
+  .resource-icon svg,.resource-icon img{width:52px;height:52px;display:block;object-fit:contain}
+  .resource-icon img{border-radius:12px}
+  .resource-name{font-size:14px;font-weight:740;line-height:1.12}
+  .resource-meta{margin-top:8px;font-size:10px}
+
+  /* Resource icon picker */
+  .icon-picker-popover{position:fixed;z-index:12000;width:min(350px,calc(100vw - 24px));display:none;padding:12px;border-radius:16px;background:rgba(250,253,255,.975);box-shadow:0 22px 52px rgba(7,27,49,.28);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);color:var(--text)}
+  .icon-picker-popover.show{display:block}
+  .icon-picker-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+  .icon-picker-head strong{font-size:14px}
+  .icon-picker-auto{width:100%;height:38px;border:0;border-radius:10px;background:rgba(var(--accent-rgb),.075);color:#24415d;text-align:left;padding:0 11px;font-weight:700;margin-bottom:10px}
+  .icon-picker-auto.active{box-shadow:inset 0 0 0 2px rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.11)}
+  .icon-picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+  .icon-option{aspect-ratio:1;border:0;border-radius:11px;background:#f0f5fa;display:grid;place-items:center;padding:5px}
+  .icon-option svg{width:30px;height:30px}
+  .icon-option.active{background:rgba(var(--accent-rgb),.11);box-shadow:inset 0 0 0 2px rgba(var(--accent-rgb),.34)}
+  .icon-url-label{display:block;font-size:11px;font-weight:720;color:#4d647c;margin:11px 0 5px}
+  .icon-url-row{display:grid;grid-template-columns:1fr auto;gap:7px}
+  .icon-url-row input{height:38px;border:0;border-radius:9px;background:#eef4fa;padding:0 10px;min-width:0}
+  .icon-url-row .btn{height:38px;padding:0 11px}
+  .icon-picker-note{display:block;margin-top:7px;color:#74879a;font-size:10px;line-height:1.35}
+
+  @media (min-width:1321px){.resource-grid{grid-template-columns:repeat(8,minmax(0,158px));justify-content:space-between}}
+  @media (max-width:1320px){
+    .toolbar{grid-template-columns:minmax(150px,.85fr) minmax(220px,1.25fr) auto repeat(3,auto)}
+    .toolbar .optional-wide{display:none}
+    .resource-grid{grid-template-columns:repeat(7,minmax(0,1fr))}
+  }
+  @media (max-width:1080px){
+    .resource-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .group-meta{display:none}
+  }
+  @media (max-width:900px){
+    .toolbar{grid-template-columns:minmax(145px,.9fr) minmax(210px,1.25fr) auto auto 42px 42px}
+    #newGroupBtn,#settingsBtn{width:42px;padding:0}
+    #newGroupBtn span,#settingsBtn span{display:none}
+    .resource-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .hero{width:92vw;margin-bottom:42px}
+    .group-header{grid-template-columns:auto minmax(0,1fr) auto}
+    .group-controls{grid-column:auto;padding-bottom:0}
+    .collapse-pill{min-width:44px;width:44px;font-size:0}
+    .collapse-pill::after{content:"⌄";font-size:15px}
+    .group:not(.collapsed) .collapse-pill::after{content:"⌃"}
+  }
+  @media (max-width:680px){
+    .app{width:min(calc(100% - 14px),var(--page-max));padding-top:7px}
+    .toolbar{position:relative;top:0;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-flow:dense;gap:7px;padding:8px;border-radius:15px}
+    .toolbar .field:nth-of-type(1){grid-column:1/4}
+    .toolbar .field:nth-of-type(2){grid-column:4/7}
+    .toolbar #addResourceBtn{grid-column:1/4}
+    .toolbar #resourceIconBtn{grid-column:4/5;min-width:0;width:auto;padding:0!important}
+    .toolbar #resourceIconBtn .toolbar-icon-label{display:none}
+    .toolbar #newGroupBtn{grid-column:5/6}
+    .toolbar #settingsBtn{grid-column:6/7}
+    .toolbar #newGroupBtn,.toolbar #settingsBtn{width:auto;min-width:0;padding:0}
+    .toolbar .btn:not(.primary):not(.icon-choice-btn) span{display:none}
+    .hero{width:96vw;margin:18px auto 28px;padding:8px 14px}
+    .hero .tagline{font-size:10px;letter-spacing:.17em}
+    .group-header{min-height:57px;padding:0 12px;gap:8px}
+    .group-badge{width:24px;height:24px}
+    .group-badge svg{width:22px;height:22px}
+    .group-title{font-size:16px}
+    .mini-btn{width:29px;height:29px}
+    .group-controls .mini-btn[data-group-menu]{display:none}
+    .resource-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding-top:13px}
+    .group-content{padding:0 11px 12px}
+    .resource-card{padding:9px 6px 8px}
+    .resource-icon,.resource-icon svg,.resource-icon img{width:42px;height:42px}
+    .resource-name{font-size:12px}
+    .resource-meta{font-size:9px;margin-top:5px}
+  }
+  @media (max-width:390px){
+    .resource-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    .resource-meta{display:none}
+    .resource-icon,.resource-icon svg,.resource-icon img{width:38px;height:38px}
+    .resource-name{font-size:11px}
+  }
+
+</style>
+</head>
+<body>
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs><clipPath id="resourceSquircle" clipPathUnits="objectBoundingBox"><path d="M 1.000000,0.500000 L 0.998795,0.656538 L 0.995173,0.720845 L 0.989117,0.769390 L 0.980593,0.809307 L 0.969553,0.843292 L 0.955925,0.872683 L 0.939605,0.898244 L 0.920448,0.920448 L 0.898244,0.939605 L 0.872683,0.955925 L 0.843292,0.969553 L 0.809307,0.980593 L 0.769390,0.989117 L 0.720845,0.995173 L 0.656538,0.998795 L 0.500000,1.000000 L 0.343462,0.998795 L 0.279155,0.995173 L 0.230610,0.989117 L 0.190693,0.980593 L 0.156708,0.969553 L 0.127317,0.955925 L 0.101756,0.939605 L 0.079552,0.920448 L 0.060395,0.898244 L 0.044075,0.872683 L 0.030447,0.843292 L 0.019407,0.809307 L 0.010883,0.769390 L 0.004827,0.720845 L 0.001205,0.656538 L 0.000000,0.500000 L 0.001205,0.343462 L 0.004827,0.279155 L 0.010883,0.230610 L 0.019407,0.190693 L 0.030447,0.156708 L 0.044075,0.127317 L 0.060395,0.101756 L 0.079552,0.079552 L 0.101756,0.060395 L 0.127317,0.044075 L 0.156708,0.030447 L 0.190693,0.019407 L 0.230610,0.010883 L 0.279155,0.004827 L 0.343462,0.001205 L 0.500000,0.000000 L 0.656538,0.001205 L 0.720845,0.004827 L 0.769390,0.010883 L 0.809307,0.019407 L 0.843292,0.030447 L 0.872683,0.044075 L 0.898244,0.060395 L 0.920448,0.079552 L 0.939605,0.101756 L 0.955925,0.127317 L 0.969553,0.156708 L 0.980593,0.190693 L 0.989117,0.230610 L 0.995173,0.279155 L 0.998795,0.343462 L 1.000000,0.500000 Z"/></clipPath></defs>
+</svg>
+
+<div class="background-layer" id="backgroundLayer" aria-hidden="true"></div>
+<div class="background-shade" id="backgroundShade" aria-hidden="true"></div>
+<div class="app">
+  <section class="toolbar glass" aria-label="Dashboard controls">
+    <div class="field"><label for="resourceName">Resource Name</label><input id="resourceName" placeholder="e.g. Internal Wiki" autocomplete="off"></div>
+    <div class="field"><label for="resourceUrl">URL</label><input id="resourceUrl" placeholder="https://example.com" autocomplete="off"></div>
+    <button class="btn icon-choice-btn" id="resourceIconBtn" type="button" title="Choose resource icon"><span class="toolbar-icon-preview" id="resourceIconPreview" aria-hidden="true"></span><span class="toolbar-icon-label">Icon</span></button>
+    <button class="btn primary" id="addResourceBtn" title="Add resource to selected group">＋ <span>Add Resource</span></button>
+    <button class="btn" id="newGroupBtn">＋ <span>New Group</span></button>
+    <button class="btn optional-wide" id="importBtn">⇧ <span>Import JSON</span></button>
+    <button class="btn optional-wide" id="exportBtn">⇩ <span>Export JSON</span></button>
+    <button class="btn" id="settingsBtn">⚙ <span>Settings</span></button>
+  </section>
+
+  <div class="icon-picker-popover" id="iconPicker" role="dialog" aria-label="Resource icon picker">
+    <div class="icon-picker-head"><strong>Resource icon</strong><button class="close" id="closeIconPicker" type="button" aria-label="Close icon picker">×</button></div>
+    <button class="icon-picker-auto" id="autoIconOption" type="button">Use site icon automatically</button>
+    <div class="icon-picker-grid" id="iconPickerGrid"></div>
+    <label class="icon-url-label" for="iconUrlInput">Online icon URL</label>
+    <div class="icon-url-row"><input id="iconUrlInput" type="url" placeholder="https://…/icon.svg"><button class="btn" id="applyIconUrl" type="button">Use</button></div>
+    <small class="icon-picker-note">Online icons fall back to a locally drawn vector icon when unavailable.</small>
+  </div>
+
+  <section class="hero" aria-label="Dashboard greeting">
+    <input id="heroTitle" value="Welcome, Garrett" aria-label="Dashboard title or greeting" maxlength="120">
+    <div class="tagline" id="tagline">Your apps. Your tools. All in one place.</div>
+  </section>
+
+  <main class="groups" id="groups"></main>
+</div>
+
+<footer class="footer">
+  <div class="left"></div>
+  <div class="center" id="licensePlacard">
+    <div>Team Portal is licensed under <a rel="license" href="https://creativecommons.org/licenses/by-nd/4.0/" target="_blank">CC BY-ND 4.0</a>.</div>
+    <div id="licenseLine">Attribution required • redistribution of modified versions is not permitted.</div>
+  </div>
+  <div class="right"><button class="footer-btn" id="helpBtn">? &nbsp;Help</button></div>
+</footer>
+
+<input class="sr-only" type="file" id="importFile" accept="application/json,.json">
+<input class="sr-only" type="file" id="backgroundFile" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp,image/avif">
+
+<div class="modal-backdrop" id="importModal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-icon" aria-hidden="true">⇧</div>
+      <div><h2 id="importTitle">Import JSON configuration</h2><p>Import a previously exported dashboard configuration to restore resources, groups, layout, and appearance.</p></div>
+      <button class="close" id="closeImport" aria-label="Close">×</button>
+    </div>
+    <div class="modal-actions"><button class="btn primary" id="chooseImport">▣ &nbsp;Choose File</button><button class="btn" id="skipImport">Skip for now</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="newGroupModal" role="dialog" aria-modal="true" aria-labelledby="newGroupTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-icon" aria-hidden="true">＋</div>
+      <div><h2 id="newGroupTitle">Create a group</h2><p>Create an empty group for organizing resource links. New groups start collapsed.</p></div>
+      <button class="close" id="closeNewGroup" aria-label="Close">×</button>
+    </div>
+    <div class="setting" style="margin-top:18px"><label for="newGroupName">Group name</label><input id="newGroupName" maxlength="80" placeholder="e.g. Operations" autocomplete="off"></div>
+    <div class="modal-actions"><button class="btn primary" id="createGroupBtn">Create Group</button><button class="btn" id="cancelNewGroup">Cancel</button></div>
+  </div>
+</div>
+
+<aside class="drawer" id="settingsDrawer" aria-label="Dashboard settings">
+  <div class="drawer-inner">
+    <div class="drawer-head"><h2>Dashboard Settings</h2><button class="close" id="closeSettings" aria-label="Close settings">×</button></div>
+    <div class="setting"><label for="settingsTitle">Title / Greeting</label><input id="settingsTitle" maxlength="120"></div>
+    <div class="setting"><label for="settingsTagline">Tagline</label><input id="settingsTagline" maxlength="180"></div>
+    <div class="setting"><label>Background RGB</label><div class="setting-row"><input id="rgbR" type="number" min="0" max="255" placeholder="R"><input id="rgbG" type="number" min="0" max="255" placeholder="G"><input id="rgbB" type="number" min="0" max="255" placeholder="B"></div><small>Used when no background image is active.</small></div>
+    <div class="setting"><label for="backgroundPath">Background image URL / path</label><input id="backgroundPath" placeholder="https://… or local relative path"><small id="backgroundSourceNote">Browser security prevents retaining a real local filesystem path from a file picker. Uploaded files are embedded in the configuration and the filename is recorded as metadata.</small></div>
+    <div class="setting"><label>Or upload a background image</label><button class="btn" id="pickBackground">▣ &nbsp;Choose Image</button></div>
+    <div class="setting"><label for="overlayRange">Background shading overlay</label><div class="range-line"><input id="overlayRange" type="range" min="0" max="85" value="34"><span class="range-value" id="overlayValue">34%</span></div></div>
+    <div class="setting"><label for="accentColor">Accent color</label><input id="accentColor" type="color" value="#377dff" style="padding:4px"></div>
+    <div class="drawer-actions"><button class="btn primary" id="applySettings">Apply Settings</button><button class="btn" id="downloadSettings">Export JSON</button></div>
+    <div class="danger-zone"><button class="btn" id="clearBackground">Clear Background Image</button> <button class="btn" id="resetSession">Reset Dashboard</button></div>
+  </div>
+</aside>
+
+<div class="context-menu" id="contextMenu" role="menu">
+  <button class="menu-item" data-action="open">↗ <span>Open</span></button>
+  <button class="menu-item" data-action="favorite">☆ <span>Add to Favorites</span></button>
+  <button class="menu-item" data-action="move">⇄ <span>Move to Group…</span></button>
+  <button class="menu-item" data-action="edit">✎ <span>Edit Link</span></button>
+  <button class="menu-item danger" data-action="delete">♲ <span>Delete Link</span></button>
+</div>
+<div class="resource-tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const STORAGE_KEY = 'teamPortal.dashboard.v1';
+  const SCHEMA = 'team-portal-dashboard';
+  const VERSION = 1;
+  const $ = s => document.querySelector(s);
+  const groupsEl = $('#groups'), tooltip = $('#tooltip'), contextMenu = $('#contextMenu');
+  let activeResource = null;
+  let selectedGroupId = 'favorites';
+  const builtinIconKinds=['mail','book','ticket','doc','shield','people','chart','bulb','cloud','code','link'];
+  let pendingIconChoice={mode:'auto',kind:'link',url:''};
+
+  const uid = (p='id') => `${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+  const nowISO = () => new Date().toISOString();
+  const escapeHtml = s => String(s ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const hostname = value => { try { return new URL(value).hostname.replace(/^www\./,''); } catch { return value; } };
+  const validUrl = value => { try { const u = new URL(value); return ['http:','https:','file:'].includes(u.protocol); } catch { return false; } };
+  const normalizeUrl = value => {
+    const v = value.trim(); if (!v) return '';
+    if (/^(https?:|file:)/i.test(v)) return v;
+    return 'https://' + v;
+  };
+  const timeAgo = iso => {
+    const d = new Date(iso), diff = Math.max(0, Date.now()-d.getTime()), min=Math.floor(diff/60000);
+    if (min < 1) return 'just now'; if (min < 60) return `${min}m ago`;
+    const h=Math.floor(min/60); if (h<24) return `${h}h ago`; const days=Math.floor(h/24); if(days<30) return `${days}d ago`;
+    return d.toLocaleDateString();
+  };
+
+  function defaultState(){
+    const t = nowISO();
+    return {
+      schema: SCHEMA, version: VERSION, exportedAt:null,
+      dashboard:{ title:'Welcome, Garrett', tagline:'Your apps. Your tools. All in one place.', selectedGroupId:'favorites' },
+      appearance:{ accent:'#3d7cff', background:{ type:'scenic', source:'builtin', color:{r:113,g:157,b:198}, imagePath:'', imageData:'', imageName:'Mountain Lake', overlay:30, position:'center', size:'cover' } },
+      groups:[
+        {id:'favorites',name:'Favorites',icon:'star',collapsed:false,createdAt:t,updatedAt:t,resources:[
+          sample('Email','https://mail.example.com','mail',t), sample('Wiki','https://portal.example.com/wiki','book',t), sample('Tickets','https://tickets.example.com','ticket',t), sample('Docs','https://docs.example.com','doc',t), sample('VPN','https://vpn.example.com','shield',t), sample('HR','https://hr.example.com','people',t), sample('Monitoring','https://monitoring.example.com','chart',t), sample('Knowledge','https://kb.example.com','bulb',t)
+        ]}
+      ],
+      metadata:{createdAt:t,updatedAt:t,lastImportedAt:null,lastExportedAt:null,license:{id:'CC-BY-ND-4.0',name:'Creative Commons Attribution-NoDerivatives 4.0 International',url:'https://creativecommons.org/licenses/by-nd/4.0/',attribution:'Team Portal',statement:'Attribution required; redistribution of modified versions is not permitted.'}}
+    };
+  }
+  function sample(name,url,icon,iso){return {id:uid('res'),name,url,icon,iconMode:'builtin',iconUrl:'',createdAt:iso,updatedAt:iso,favorited:true};}
+
+  let state = loadState();
+  function sanitizeState(s){
+    if (!s || typeof s !== 'object') throw new Error('Invalid JSON root.');
+    if (s.schema && s.schema !== SCHEMA) throw new Error('Unsupported dashboard schema.');
+    const base = defaultState();
+    const out = {...base,...s};
+    out.dashboard = {...base.dashboard,...(s.dashboard||{})};
+    out.appearance = {...base.appearance,...(s.appearance||{}),background:{...base.appearance.background,...(s.appearance?.background||{}),color:{...base.appearance.background.color,...(s.appearance?.background?.color||{})}}};
+    if(!out.appearance.background.source){
+      out.appearance.background.source = out.appearance.background.imageData ? 'embedded' : out.appearance.background.imagePath ? 'path' : out.appearance.background.type==='color' ? 'color' : 'builtin';
+    }
+    out.groups = Array.isArray(s.groups) ? s.groups.map((g,i)=>({
+      id:String(g.id||uid('grp')), name:String(g.name||`Group ${i+1}`), icon:String(g.icon||'◈'), collapsed:i===0?false:Boolean(g.collapsed), createdAt:g.createdAt||nowISO(), updatedAt:g.updatedAt||nowISO(), userCreated:Boolean(g.userCreated),
+      resources:Array.isArray(g.resources)?g.resources.map(r=>({id:String(r.id||uid('res')),name:String(r.name||'Untitled'),url:String(r.url||''),icon:String(r.icon||iconKey(r.name,r.url)),iconMode:['auto','builtin','url'].includes(r.iconMode)?r.iconMode:(r.iconUrl?'url':'builtin'),iconUrl:String(r.iconUrl||''),createdAt:r.createdAt||nowISO(),updatedAt:r.updatedAt||r.createdAt||nowISO(),favorited:Boolean(r.favorited)})):[]
+    })) : base.groups;
+    let fav = out.groups.find(g=>g.id==='favorites' || g.name.toLowerCase()==='favorites');
+    if(!fav){fav={id:'favorites',name:'Favorites',icon:'star',collapsed:false,createdAt:nowISO(),updatedAt:nowISO(),resources:[]};out.groups.unshift(fav);} else {fav.id='favorites';fav.name='Favorites';fav.icon='star';fav.collapsed=false;out.groups=[fav,...out.groups.filter(g=>g!==fav)];}
+    // Remove the three empty groups that were seeded by the earlier prototype, but preserve real user-created groups.
+    const legacyNames=new Set(['Operations','Cloud Tools','New Group']);
+    out.groups=out.groups.filter(g=>g.id==='favorites' || g.userCreated || g.resources.length || !(legacyNames.has(g.name) && g.createdAt===fav.createdAt));
+    out.metadata={...base.metadata,...(s.metadata||{}),license:{...base.metadata.license,...(s.metadata?.license||{})}};
+    return out;
+  }
+  function loadState(){
+    try { const raw=sessionStorage.getItem(STORAGE_KEY); return raw?sanitizeState(JSON.parse(raw)):defaultState(); }
+    catch(e){ console.warn(e); return defaultState(); }
+  }
+  function saveState(){ state.dashboard.selectedGroupId=selectedGroupId; state.metadata.updatedAt=nowISO(); try{ sessionStorage.setItem(STORAGE_KEY,JSON.stringify(state)); return true; }catch(e){ console.warn('Could not persist dashboard to sessionStorage:',e); return false; } }
+  function commit(msg){ const persisted=saveState(); render(); if(msg) toastMsg(persisted?msg:(msg+' — applied for this page, but browser session storage is full')); }
+
+  function iconKey(name,url){
+    const s=(name+' '+url).toLowerCase();
+    if(/mail|email/.test(s)) return 'mail'; if(/wiki|book|knowledge/.test(s)) return 'book'; if(/ticket|jira|issue/.test(s)) return 'ticket'; if(/doc|drive|file/.test(s)) return 'doc'; if(/vpn|security|shield/.test(s)) return 'shield'; if(/hr|people|user/.test(s)) return 'people'; if(/monitor|splunk|chart|metric|analytics/.test(s)) return 'chart'; if(/idea|bulb|learn/.test(s)) return 'bulb'; if(/cloud|aws|azure|gcp/.test(s)) return 'cloud'; if(/code|git|dev/.test(s)) return 'code'; return 'link';
+  }
+  function iconSvg(kind,seed){
+    const palette={
+      mail:'#2f80ed',book:'#7756f5',ticket:'#e84d7a',doc:'#2d6cdf',shield:'#28b86b',people:'#8158d8',chart:'#f39a3d',bulb:'#12aeb5',cloud:'#4ba3e3',code:'#5965d8',link:'#4776a6'
+    };
+    const color=palette[kind]||palette.link;
+    const glyphs={
+      mail:'<path d="M5.5 7.7h13a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path d="m4.7 9.3 7.3 5.4 7.3-5.4"/>',
+      book:'<path d="M4.8 6.2c3 0 5.4.8 7.2 2.3v11c-1.8-1.5-4.2-2.3-7.2-2.3v-11Zm14.4 0c-3 0-5.4.8-7.2 2.3v11c1.8-1.5 4.2-2.3 7.2-2.3v-11Z"/>',
+      ticket:'<path d="M4.5 7h15v3.2a2.3 2.3 0 0 0 0 4.6V18h-15v-3.2a2.3 2.3 0 0 0 0-4.6V7Z"/><path d="M12 8.7v6.6"/>',
+      doc:'<path d="M6.8 3.8h7.5l4.2 4.2v12.2H6.8V3.8Z"/><path d="M14.3 3.8V8h4.2M9.5 12h6M9.5 15.2h6"/>',
+      shield:'<path d="M12 3.5 19 6v5.4c0 4.5-2.7 7.6-7 9.1-4.3-1.5-7-4.6-7-9.1V6l7-2.5Z"/><path d="m9.1 12.1 1.9 1.8 4-4.2"/>',
+      people:'<circle cx="8.7" cy="8.8" r="3"/><circle cx="16.4" cy="9.9" r="2.4"/><path d="M3.6 19c.7-3.4 2.4-5 5.1-5s4.5 1.6 5.2 5M14.2 14.4c3.3-.4 5 .9 5.8 3.8"/>',
+      chart:'<path d="M4.8 19V10h3.2v9H4.8Zm5.6 0V5h3.2v14h-3.2Zm5.6 0v-7h3.2v7H16Z"/>',
+      bulb:'<path d="M8.3 15.4a6.1 6.1 0 1 1 7.4 0c-.9.7-1.2 1.4-1.3 2.3H9.6c-.1-.9-.4-1.6-1.3-2.3Z"/><path d="M9.4 21h5.2M10 18.2h4"/>',
+      cloud:'<path d="M6.8 18h10.5a4 4 0 0 0 .5-8 6.1 6.1 0 0 0-11.5-1.4A4.6 4.6 0 0 0 6.8 18Z"/>',
+      code:'<path d="m9 7.8-4.2 4.2L9 16.2M15 7.8l4.2 4.2-4.2 4.2M13.5 5.8l-3 12.4"/>',
+      link:'<path d="m9.4 14.6 5.2-5.2M8.2 16H6a4 4 0 0 1 0-8h3M15.8 8H18a4 4 0 0 1 0 8h-3"/>'
+    };
+    const filled=new Set(['chart']);
+    return `<svg viewBox="0 0 24 24" role="img" aria-hidden="true"><rect x="1.2" y="1.2" width="21.6" height="21.6" rx="6.2" fill="${color}" fill-opacity=".105"/><g ${filled.has(kind)?`fill="${color}" stroke="none"`:`fill="none" stroke="${color}"`} stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${glyphs[kind]||glyphs.link}</g></svg>`;
+  }
+  function groupIconSvg(kind){
+    const k=String(kind||'folder').toLowerCase();
+    const type=(k==='★'||k==='star')?'star':(k==='☁'||k==='cloud')?'cloud':(k==='⚙'||k==='tools')?'tools':(k==='shield')?'shield':(k==='people')?'people':(k==='chart')?'chart':(k==='book')?'book':(k==='code')?'code':'folder';
+    const paths={
+      star:'<path d="m12 3 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8L6.8 19l1-5.8-4.2-4.1 5.8-.8L12 3Z"/>',
+      folder:'<path d="M3.8 7.2h6l1.8 2h8.6v8.6a2 2 0 0 1-2 2H5.8a2 2 0 0 1-2-2V7.2Z"/><path d="M3.8 9.2h16.4"/>',
+      cloud:'<path d="M6.7 18.2h10.7a4 4 0 0 0 .4-8 6 6 0 0 0-11.4-1.4 4.6 4.6 0 0 0 .3 9.4Z"/>',
+      tools:'<path d="M14.8 5.3a4.2 4.2 0 0 0-5.2 5.3L4.2 16a2 2 0 0 0 2.8 2.8l5.4-5.4a4.2 4.2 0 0 0 5.3-5.2l-2.5 2.5-2-2 1.6-3.4Z"/>',
+      shield:'<path d="M12 3.5 19 6v5.4c0 4.5-2.7 7.6-7 9.1-4.3-1.5-7-4.6-7-9.1V6l7-2.5Z"/>',
+      people:'<circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.3"/><path d="M3.7 19c.7-3.4 2.5-5 5.3-5s4.5 1.6 5.2 5M14.5 14.5c3.2-.3 4.9 1 5.6 3.6"/>',
+      chart:'<path d="M5 19v-7h3v7H5Zm5.5 0V6h3v13h-3Zm5.5 0v-9h3v9h-3Z"/>',
+      book:'<path d="M5 6.3c2.9 0 5.2.8 7 2.2v10.8c-1.8-1.4-4.1-2.2-7-2.2V6.3Zm14 0c-2.9 0-5.2.8-7 2.2v10.8c1.8-1.4 4.1-2.2 7-2.2V6.3Z"/>',
+      code:'<path d="m9 8-4 4 4 4M15 8l4 4-4 4M13.5 6l-3 12"/>'
+    };
+    const color=type==='star'?'#ffd15a':'currentColor';
+    const fill=new Set(['star','chart']).has(type)?color:'none';
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="${fill}" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[type]}</g></svg>`;
+  }
+  function faviconServiceUrl(url){
+    try{const u=new URL(url);if(!/^https?:$/.test(u.protocol))return '';return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(u.href)}`;}catch{return '';}
+  }
+  function resourceIconMarkup(r){
+    const fallback=r.icon||iconKey(r.name,r.url);
+    let src='';
+    if(r.iconMode==='url'&&r.iconUrl)src=r.iconUrl;
+    else if(r.iconMode==='auto')src=faviconServiceUrl(r.url);
+    if(src)return `<img class="remote-resource-icon" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback-kind="${escapeHtml(fallback)}" data-fallback-seed="${escapeHtml(r.url||r.name)}">`;
+    return iconSvg(fallback,r.url||r.name);
+  }
+  function bindIconFallbacks(root=document){
+    root.querySelectorAll('.remote-resource-icon').forEach(img=>{
+      img.addEventListener('error',()=>{const holder=img.parentElement;if(holder)holder.innerHTML=iconSvg(img.dataset.fallbackKind||'link',img.dataset.fallbackSeed||'');},{once:true});
+    });
+  }
+
+
+  function render(){
+    selectedGroupId = state.groups.some(g=>g.id===state.dashboard.selectedGroupId)?state.dashboard.selectedGroupId:'favorites';
+    applyAppearance();
+    $('#heroTitle').value=state.dashboard.title||''; $('#tagline').textContent=state.dashboard.tagline||'';
+    adjustHeroFont();
+    groupsEl.innerHTML = state.groups.map((g,idx)=>{
+      const meta = `${g.resources.length} item${g.resources.length===1?'':'s'} • Last updated ${new Date(g.updatedAt).toLocaleString()}`;
+      const cards = g.resources.length ? `<div class="resource-grid">${g.resources.map(r=>cardHTML(r,g)).join('')}</div>` : `<div class="empty-state">${g.id==='favorites'?'Favorite resources will appear here.':'No resources yet. Select this group and add one from the bar above.'}</div>`;
+      return `<section class="group ${g.collapsed?'collapsed':''} ${g.id===selectedGroupId?'selected':''}" data-group-id="${escapeHtml(g.id)}">
+        <header class="group-header" data-select-group="${escapeHtml(g.id)}"><div class="group-badge">${groupIconSvg(g.icon)}</div><div class="group-title-wrap"><span class="group-title">${escapeHtml(g.name)}</span><span class="group-meta">${escapeHtml(meta)}</span></div>
+        <div class="group-controls"><button class="mini-btn" data-move-group="up" title="Move group up" ${idx===0?'disabled':''}>▲</button><button class="mini-btn" data-move-group="down" title="Move group down" ${idx===state.groups.length-1?'disabled':''}>▼</button><button class="mini-btn" data-group-menu title="Rename or delete group">•••</button><button class="collapse-pill" data-collapse>${g.collapsed?'Collapsed⌄':'Expanded⌃'}</button></div></header>
+        <div class="group-content">${cards}</div></section>`;
+    }).join('');
+    bindRendered();
+  }
+  function cardHTML(r,g){
+    const title=escapeHtml(r.name), url=escapeHtml(r.url), kind=r.icon||iconKey(r.name,r.url);
+    return `<article class="resource-card" tabindex="0" data-resource-id="${escapeHtml(r.id)}" data-group-id="${escapeHtml(g.id)}" data-url="${url}" aria-label="${title}, ${url}">
+      <div class="resource-icon">${resourceIconMarkup(r)}</div><div class="resource-name" title="${title}">${title}</div><div class="resource-meta">◷ <span>${escapeHtml(timeAgo(r.createdAt))}</span></div></article>`;
+  }
+  function bindRendered(){
+    bindIconFallbacks();
+    document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const g=groupFromEl(b); if(g.id==='favorites'){g.collapsed=false;}else g.collapsed=!g.collapsed;g.updatedAt=nowISO();commit();}));
+    document.querySelectorAll('[data-select-group]').forEach(h=>h.addEventListener('click',e=>{if(e.target.closest('button'))return;selectedGroupId=h.dataset.selectGroup;state.dashboard.selectedGroupId=selectedGroupId;saveState();render();}));
+    document.querySelectorAll('[data-move-group]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); moveGroup(groupFromEl(b).id,b.dataset.moveGroup);}));
+    document.querySelectorAll('[data-group-menu]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); groupMenu(groupFromEl(b));}));
+    document.querySelectorAll('.resource-card').forEach(c=>{
+      c.addEventListener('click',e=>{if(e.button===0)openResource(c);});
+      c.addEventListener('keydown',e=>{if(e.key==='Enter')openResource(c);if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){e.preventDefault();showContextFor(c,c.getBoundingClientRect().left+80,c.getBoundingClientRect().top+70);}});
+      c.addEventListener('contextmenu',e=>{e.preventDefault();showContextFor(c,e.clientX,e.clientY);});
+      c.addEventListener('mouseenter',()=>showTooltip(c)); c.addEventListener('mouseleave',hideTooltip); c.addEventListener('mousemove',positionTooltip);
+    });
+  }
+  function groupFromEl(el){const id=el.closest('.group').dataset.groupId;return state.groups.find(g=>g.id===id);}
+  function resourceRef(groupId,id){const g=state.groups.find(x=>x.id===groupId);return {g,r:g?.resources.find(x=>x.id===id)};}
+  function moveGroup(id,dir){const i=state.groups.findIndex(g=>g.id===id);if(i<0||id==='favorites')return;const j=dir==='up'?i-1:i+1;if(j<=0||j>=state.groups.length)return;[state.groups[i],state.groups[j]]=[state.groups[j],state.groups[i]];commit('Group order updated');}
+  function groupMenu(g){
+    if(g.id==='favorites'){const name=prompt('Favorites is fixed as the top group. Rename is disabled.');return;}
+    const action=prompt(`Group: ${g.name}\nType a new name to rename it, or type DELETE to remove the group.` , g.name);
+    if(action===null)return; if(action.trim().toUpperCase()==='DELETE'){
+      if(g.resources.length && !confirm(`Delete “${g.name}” and its ${g.resources.length} resource(s)?`))return;
+      state.groups=state.groups.filter(x=>x.id!==g.id); if(selectedGroupId===g.id)selectedGroupId='favorites';commit('Group deleted');
+    } else if(action.trim()){g.name=action.trim();g.updatedAt=nowISO();commit('Group renamed');}
+  }
+
+  function addResource(){
+    const name=$('#resourceName').value.trim(), url=normalizeUrl($('#resourceUrl').value); if(!name||!url){toastMsg('Enter both a resource name and URL');return;} if(!validUrl(url)){toastMsg('Enter a valid http(s) or file URL');return;}
+    const g=state.groups.find(x=>x.id===selectedGroupId)||state.groups[0]; const t=nowISO(); const fallback=iconKey(name,url); g.resources.push({id:uid('res'),name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:fallback,iconMode:pendingIconChoice.mode,iconUrl:pendingIconChoice.mode==='url'?pendingIconChoice.url:'',createdAt:t,updatedAt:t,favorited:g.id==='favorites'});g.updatedAt=t;g.collapsed=false;$('#resourceName').value='';$('#resourceUrl').value='';pendingIconChoice={mode:'auto',kind:'link',url:''};updateIconPreview();commit(`Added ${name} to ${g.name}`);
+  }
+  function showNewGroupModal(){ $('#newGroupName').value=''; $('#newGroupModal').classList.add('show'); setTimeout(()=>$('#newGroupName').focus(),0); }
+  function hideNewGroupModal(){ $('#newGroupModal').classList.remove('show'); }
+  function createGroup(){const name=$('#newGroupName').value.trim();if(!name){toastMsg('Enter a group name');$('#newGroupName').focus();return;}const t=nowISO(),g={id:uid('grp'),name,icon:'folder',collapsed:true,createdAt:t,updatedAt:t,userCreated:true,resources:[]};state.groups.push(g);selectedGroupId=g.id;hideNewGroupModal();commit('New group created');}
+  function openResource(card){const {r}=resourceRef(card.dataset.groupId,card.dataset.resourceId); if(r?.url)window.open(r.url,'_blank','noopener,noreferrer');}
+  function showTooltip(card){tooltip.textContent=card.dataset.url;tooltip.classList.add('show');const rect=card.getBoundingClientRect();tooltip.style.left=(rect.left+rect.width/2)+'px';tooltip.style.top=(rect.top-6)+'px';}
+  function positionTooltip(e){if(!tooltip.classList.contains('show'))return;tooltip.style.left=Math.min(window.innerWidth-190,Math.max(190,e.clientX))+'px';tooltip.style.top=(e.clientY-18)+'px';}
+  function hideTooltip(){tooltip.classList.remove('show');}
+  function showContextFor(card,x,y){document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));card.classList.add('selected');activeResource={groupId:card.dataset.groupId,resourceId:card.dataset.resourceId};const favItem=contextMenu.querySelector('[data-action="favorite"] span');favItem.textContent=card.dataset.groupId==='favorites'?'Remove from Favorites':'Add to Favorites';contextMenu.classList.add('show');const w=190,h=210;contextMenu.style.left=Math.min(x,window.innerWidth-w-10)+'px';contextMenu.style.top=Math.min(y,window.innerHeight-h-10)+'px';}
+  function hideContext(){contextMenu.classList.remove('show');document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));}
+  function contextAction(action){if(!activeResource)return;const {g,r}=resourceRef(activeResource.groupId,activeResource.resourceId);if(!g||!r)return;
+    if(action==='open')window.open(r.url,'_blank','noopener,noreferrer');
+    if(action==='delete'&&confirm(`Delete “${r.name}”?`)){g.resources=g.resources.filter(x=>x.id!==r.id);g.updatedAt=nowISO();commit('Link deleted');}
+    if(action==='edit'){const name=prompt('Resource name:',r.name);if(name===null)return;const url=prompt('Resource URL:',r.url);if(url===null)return;const nurl=normalizeUrl(url);if(!name.trim()||!validUrl(nurl)){toastMsg('Name and valid URL required');return;}r.name=name.trim();r.url=nurl;if(r.iconMode==='auto'){r.icon=iconKey(r.name,r.url);r.iconUrl='';}r.updatedAt=nowISO();g.updatedAt=nowISO();commit('Link updated');}
+    if(action==='favorite')toggleFavorite(g,r);
+    if(action==='move')moveResource(g,r);
+    hideContext();
+  }
+  function toggleFavorite(g,r){const fav=state.groups[0]; if(g.id==='favorites'){
+      const destinations=state.groups.slice(1);if(!destinations.length){toastMsg('Create another group before removing from Favorites');return;}
+      const name=prompt('Move this favorite to which group?\n'+destinations.map(x=>x.name).join(', '),destinations[0].name);const d=destinations.find(x=>x.name.toLowerCase()===String(name).trim().toLowerCase());if(!d){toastMsg('Group not found');return;}fav.resources=fav.resources.filter(x=>x.id!==r.id);r.favorited=false;d.resources.push(r);d.updatedAt=nowISO();fav.updatedAt=nowISO();commit('Removed from Favorites');
+    } else {
+      g.resources=g.resources.filter(x=>x.id!==r.id);r.favorited=true;fav.resources.push(r);g.updatedAt=fav.updatedAt=nowISO();commit('Added to Favorites');
+    }}
+  function moveResource(g,r){const targets=state.groups.filter(x=>x.id!==g.id);if(!targets.length)return;const name=prompt('Move to group:\n'+targets.map(x=>x.name).join(', '),targets[0].name);if(name===null)return;const d=targets.find(x=>x.name.toLowerCase()===name.trim().toLowerCase());if(!d){toastMsg('Group not found');return;}g.resources=g.resources.filter(x=>x.id!==r.id);d.resources.push(r);r.favorited=d.id==='favorites';g.updatedAt=d.updatedAt=nowISO();commit(`Moved to ${d.name}`);}
+
+  function updateIconPreview(){
+    const name=$('#resourceName').value.trim()||'Resource',url=normalizeUrl($('#resourceUrl').value||'');
+    const preview=$('#resourceIconPreview');
+    const pseudo={name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:iconKey(name,url),iconMode:pendingIconChoice.mode,iconUrl:pendingIconChoice.url};
+    preview.innerHTML=resourceIconMarkup(pseudo);bindIconFallbacks(preview);
+    $('#autoIconOption')?.classList.toggle('active',pendingIconChoice.mode==='auto');
+    document.querySelectorAll('.icon-option').forEach(b=>b.classList.toggle('active',pendingIconChoice.mode==='builtin'&&b.dataset.iconKind===pendingIconChoice.kind));
+  }
+  function buildIconPicker(){
+    const grid=$('#iconPickerGrid');
+    grid.innerHTML=builtinIconKinds.map(k=>`<button type="button" class="icon-option" data-icon-kind="${k}" title="${k[0].toUpperCase()+k.slice(1)}">${iconSvg(k,k)}</button>`).join('');
+    grid.querySelectorAll('[data-icon-kind]').forEach(b=>b.addEventListener('click',()=>{pendingIconChoice={mode:'builtin',kind:b.dataset.iconKind,url:''};updateIconPreview();hideIconPicker();}));
+    $('#autoIconOption').addEventListener('click',()=>{pendingIconChoice={mode:'auto',kind:iconKey($('#resourceName').value,$('#resourceUrl').value),url:''};updateIconPreview();hideIconPicker();});
+    $('#applyIconUrl').addEventListener('click',()=>{const raw=$('#iconUrlInput').value.trim();try{const u=new URL(raw);if(!/^https?:$/.test(u.protocol))throw new Error();pendingIconChoice={mode:'url',kind:iconKey($('#resourceName').value,$('#resourceUrl').value),url:u.href};updateIconPreview();hideIconPicker();}catch{toastMsg('Enter a valid http(s) icon URL');}});
+    $('#closeIconPicker').addEventListener('click',hideIconPicker);
+    updateIconPreview();
+  }
+  function showIconPicker(){
+    const picker=$('#iconPicker'),btn=$('#resourceIconBtn');picker.classList.add('show');
+    const r=btn.getBoundingClientRect();const w=picker.offsetWidth||350;
+    picker.style.left=Math.max(12,Math.min(window.innerWidth-w-12,r.left))+'px';picker.style.top=Math.min(window.innerHeight-(picker.offsetHeight||330)-12,r.bottom+8)+'px';
+    $('#iconUrlInput').value=pendingIconChoice.mode==='url'?pendingIconChoice.url:'';
+  }
+  function hideIconPicker(){ $('#iconPicker').classList.remove('show'); }
+
+  function applyAppearance(){
+    const bg=state.appearance.background||{}; const c=bg.color||{r:113,g:157,b:198};
+    const accent=state.appearance.accent||'#3d7cff';
+    document.documentElement.style.setProperty('--accent',accent);
+    const hex=accent.replace('#',''); if(hex.length===6){document.documentElement.style.setProperty('--accent-rgb',`${parseInt(hex.slice(0,2),16)},${parseInt(hex.slice(2,4),16)},${parseInt(hex.slice(4,6),16)}`);}
+    document.documentElement.style.setProperty('--bg-color',`rgb(${c.r},${c.g},${c.b})`);
+    document.documentElement.style.setProperty('--overlay',`rgba(7,23,43,${Math.max(0,Math.min(85,Number(bg.overlay)||0))/100})`);
+    document.documentElement.style.setProperty('--background-position',bg.position||'center');
+    document.documentElement.style.setProperty('--background-size',bg.size||'cover');
+    const scenic=`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b9d9f5"/><stop offset=".48" stop-color="#8ab6d5"/><stop offset="1" stop-color="#355a73"/></linearGradient><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6686a4"/><stop offset="1" stop-color="#24485e"/></linearGradient><linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5c86a3"/><stop offset="1" stop-color="#183c55"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="10"/></filter></defs><rect width="1600" height="1000" fill="url(#s)"/><g opacity=".35" filter="url(#b)"><ellipse cx="1260" cy="210" rx="240" ry="95" fill="#ffd2c2"/><ellipse cx="390" cy="150" rx="300" ry="120" fill="#fff"/></g><path d="M0 560 180 380 320 500 510 245 670 475 810 335 1020 555 1190 365 1390 520 1600 350V720H0Z" fill="#e8f2fa" opacity=".88"/><path d="M0 610 210 420 355 545 515 300 705 520 845 390 1010 575 1205 420 1400 565 1600 405V735H0Z" fill="url(#m)"/><path d="M0 660 170 535 305 630 470 455 650 625 830 510 1020 650 1210 525 1380 620 1600 490V760H0Z" fill="#173f55" opacity=".82"/><rect y="705" width="1600" height="295" fill="url(#l)"/><path d="M0 755Q320 710 590 765T1130 750T1600 770V1000H0Z" fill="#2d627b" opacity=".46"/><g fill="#173a4d" opacity=".88"><path d="M0 750 80 675 120 750 190 655 250 750 320 670 360 750V850H0Z"/><path d="M1240 755 1310 665 1360 755 1420 650 1480 755 1540 670 1600 755V860H1240Z"/></g></svg>`)}`;
+    let image='none';
+    if(bg.imageData) image=`url("${String(bg.imageData).replace(/"/g,'%22')}")`;
+    else if(bg.imagePath) image=`url("${String(bg.imagePath).replace(/"/g,'%22')}")`;
+    else if(bg.source==='builtin' || bg.type==='scenic') image=`url("${scenic}")`;
+    document.documentElement.style.setProperty('--background-image',image);
+    $('#licenseLine').textContent=(state.metadata?.license?.attribution||'Team Portal')+' • Attribution required • no redistributed derivatives';
+  }
+  function adjustHeroFont(){const el=$('#heroTitle'),n=(el.value||'').trim().length;const px=Math.max(20,Math.min(38,38-Math.max(0,n-13)*0.42));el.style.fontSize=px+'px';}
+  function openSettings(){const bg=state.appearance.background;$('#settingsTitle').value=state.dashboard.title||'';$('#settingsTagline').value=state.dashboard.tagline||'';$('#rgbR').value=bg.color.r;$('#rgbG').value=bg.color.g;$('#rgbB').value=bg.color.b;$('#backgroundPath').value=bg.source==='path'?(bg.imagePath||''):'';$('#overlayRange').value=bg.overlay;$('#overlayValue').textContent=bg.overlay+'%';$('#accentColor').value=state.appearance.accent||'#3d7cff';const note=$('#backgroundSourceNote');if(note){note.textContent=bg.imageData?`Current uploaded image: ${bg.imageName||'embedded image'}. Leave the URL/path field blank to keep it.`:'Browser security prevents retaining a real local filesystem path from a file picker. Uploaded files are embedded in the configuration and the filename is recorded as metadata.';}$('#settingsDrawer').classList.add('show');}
+  function closeSettings(){ $('#settingsDrawer').classList.remove('show'); }
+  function clampByte(n){return Math.max(0,Math.min(255,Number(n)||0));}
+  function syncLiveAppearance(){
+    state.appearance.accent=$('#accentColor').value;
+    state.appearance.background.color={r:clampByte($('#rgbR').value),g:clampByte($('#rgbG').value),b:clampByte($('#rgbB').value)};
+    state.appearance.background.overlay=Number($('#overlayRange').value);
+    applyAppearance();
+    saveState();
+  }
+  function applySettings(){
+    state.dashboard.title=$('#settingsTitle').value;state.dashboard.tagline=$('#settingsTagline').value;syncLiveAppearance();
+    const bg=state.appearance.background; const p=$('#backgroundPath').value.trim();
+    if(p){bg.imagePath=p;bg.imageData='';bg.imageName=p.split('/').pop()||p;bg.type='image';bg.source='path';}
+    else if(bg.imageData){bg.type='image';bg.source='embedded';bg.imagePath='';}
+    else if(bg.source==='builtin' || bg.type==='scenic'){bg.type='scenic';bg.source='builtin';bg.imagePath='';}
+    else {bg.type='color';bg.source='color';bg.imagePath='';}
+    commit('Settings applied');closeSettings();
+  }
+  function backgroundUpload(file){
+    if(!file)return;
+    if(!file.type.startsWith('image/')){toastMsg('Choose an image file');return;}
+    const reader=new FileReader();
+    reader.onerror=()=>toastMsg('Could not read that image file');
+    reader.onload=()=>{const bg=state.appearance.background;bg.imageData=String(reader.result);bg.imageName=file.name;bg.imagePath='';bg.type='image';bg.source='embedded';applyAppearance();const persisted=saveState();render();toastMsg(persisted?'Background image applied':'Background applied, but the image is too large for browser session storage');openSettings();};
+    reader.readAsDataURL(file);
+  }
+  function clearBackground(){const bg=state.appearance.background;bg.imageData='';bg.imagePath='';bg.imageName='';bg.type='color';bg.source='color';commit('RGB background enabled');openSettings();}
+
+
+  function exportJson(){state.exportedAt=nowISO();state.metadata.lastExportedAt=state.exportedAt;saveState();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`team-portal-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toastMsg('Dashboard JSON exported');}
+  function importJsonFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const imported=sanitizeState(JSON.parse(reader.result));imported.metadata.lastImportedAt=nowISO();state=imported;selectedGroupId=state.dashboard.selectedGroupId||'favorites';saveState();render();hideImportModal();toastMsg('Configuration imported');}catch(e){alert('Could not import this JSON file:\n'+e.message);}};reader.readAsText(file);}
+  function showImportModal(){ $('#importModal').classList.add('show'); }
+  function hideImportModal(){ $('#importModal').classList.remove('show'); }
+  let toastTimer; function toastMsg(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+
+  $('#addResourceBtn').addEventListener('click',addResource); $('#resourceUrl').addEventListener('keydown',e=>{if(e.key==='Enter')addResource();}); $('#resourceIconBtn').addEventListener('click',e=>{e.stopPropagation();$('#iconPicker').classList.contains('show')?hideIconPicker():showIconPicker();}); ['resourceName','resourceUrl'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(pendingIconChoice.mode==='auto')updateIconPreview();})); $('#newGroupBtn').addEventListener('click',showNewGroupModal);
+  $('#createGroupBtn').addEventListener('click',createGroup); $('#closeNewGroup').addEventListener('click',hideNewGroupModal); $('#cancelNewGroup').addEventListener('click',hideNewGroupModal); $('#newGroupName').addEventListener('keydown',e=>{if(e.key==='Enter')createGroup();if(e.key==='Escape')hideNewGroupModal();});
+  $('#importBtn').addEventListener('click',showImportModal); $('#chooseImport').addEventListener('click',()=>$('#importFile').click()); $('#closeImport').addEventListener('click',hideImportModal); $('#skipImport').addEventListener('click',hideImportModal); $('#importFile').addEventListener('change',e=>{importJsonFile(e.target.files[0]);e.target.value='';});
+  $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson);
+  $('#settingsBtn').addEventListener('click',openSettings); $('#closeSettings').addEventListener('click',closeSettings); $('#applySettings').addEventListener('click',applySettings);
+  $('#pickBackground').addEventListener('click',()=>$('#backgroundFile').click()); $('#backgroundFile').addEventListener('change',e=>{backgroundUpload(e.target.files[0]);e.target.value='';}); $('#clearBackground').addEventListener('click',clearBackground);
+  $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
+  $('#heroTitle').addEventListener('input',()=>{state.dashboard.title=$('#heroTitle').value;adjustHeroFont();saveState();}); $('#heroTitle').addEventListener('change',render);
+  $('#resetSession').addEventListener('click',()=>{if(confirm('Reset this session to the default dashboard?')){sessionStorage.removeItem(STORAGE_KEY);state=defaultState();selectedGroupId='favorites';commit('Dashboard reset');closeSettings();}});
+  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import/export JSON for complete configuration portability.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
+  contextMenu.addEventListener('click',e=>{const item=e.target.closest('[data-action]');if(item)contextAction(item.dataset.action);});
+  document.addEventListener('click',e=>{if(!e.target.closest('#contextMenu'))hideContext();if(!e.target.closest('#iconPicker')&&!e.target.closest('#resourceIconBtn'))hideIconPicker();}); $('#newGroupModal').addEventListener('click',e=>{if(e.target===$('#newGroupModal'))hideNewGroupModal();}); window.addEventListener('blur',hideContext); window.addEventListener('resize',hideContext); document.addEventListener('scroll',hideContext,true);
+
+  buildIconPicker();
+  render();
+  // Requirement: prompt for JSON on every page load. Users may cancel/skip.
+  setTimeout(showImportModal,180);
+})();
+</script>
+</body>
+</html>
