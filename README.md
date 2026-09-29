@@ -2,7 +2,7 @@
 
 LaunchPane is a lightweight, single-file web launcher for organizing and opening web resources from a customizable dashboard.
 
-![Demo](LaunchPane.png)
+![Demo](LaunchPane_v0.6.png)
 
 It is designed to feel more like a personal application surface than a traditional bookmark page: resources are presented as app-style tiles, organized into groups, and stored in a portable JSON configuration.
 
