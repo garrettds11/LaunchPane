@@ -123,6 +123,28 @@
   .modal-backdrop.show{display:flex}
   .modal{width:min(480px,calc(100vw - 28px));border-radius:20px;background:rgba(255,255,255,.97);box-shadow:0 30px 66px rgba(8,28,51,.30);border:1px solid rgba(255,255,255,.76);padding:22px;color:var(--text)}
   .modal-head{display:flex;gap:16px;align-items:flex-start}.modal-icon{width:70px;height:70px;border-radius:17px;background:#eff5fb;display:grid;place-items:center;color:var(--accent);flex:0 0 auto;font-size:30px}.modal h2{margin:3px 0 6px;font-size:21px}.modal p{margin:0;color:#718096;line-height:1.46;font-size:13px}.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+  /* ===== import modal action layout ===== */
+  #importModal .modal{width:min(600px,calc(100vw - 28px))}
+  #importModal .modal-actions{
+    display:grid;
+    grid-template-columns:minmax(0,1.25fr) minmax(0,1.25fr) minmax(0,.9fr);
+    gap:10px;
+    width:100%;
+  }
+  #importModal .modal-actions .btn{
+    min-width:0;
+    width:100%;
+    padding-inline:12px;
+  }
+  @media (max-width:560px){
+    #importModal .modal{padding:18px}
+    #importModal .modal-head{gap:12px}
+    #importModal .modal-icon{width:56px;height:56px;border-radius:15px;font-size:25px}
+    #importModal .modal h2{font-size:19px}
+    #importModal .modal-actions{grid-template-columns:1fr}
+  }
+
   .close{margin-left:auto;border:0;background:transparent;color:#65788d;font-size:20px}
   .drawer{position:fixed;inset:0 0 0 auto;width:min(500px,100vw);z-index:9500;background:rgba(244,249,255,.95);box-shadow:-26px 0 64px rgba(6,28,53,.28);transform:translateX(100%);transition:.25s ease;backdrop-filter:blur(28px);overflow:auto}
   .drawer.show{transform:none}.drawer-inner{padding:26px}.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.drawer h2{margin:0}.setting{margin:0 0 18px}.setting-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.setting small{display:block;color:#718096;margin-top:6px;line-height:1.4}.range-line{display:flex;gap:12px;align-items:center}.range-line input{flex:1}.range-value{width:46px;text-align:right;color:#57708c;font-weight:700}.drawer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.danger-zone{margin-top:26px;padding-top:18px;border-top:1px solid #d9e4ef}
