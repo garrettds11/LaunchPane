@@ -624,6 +624,38 @@
     .resource-card:active{transform:none}
   }
 
+  /* ===== resource drag-and-drop ===== */
+  .resource-card[draggable="true"]{cursor:grab}
+  .resource-card.dragging{
+    cursor:grabbing;
+    opacity:.34;
+    transform:scale(.965);
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.13)) brightness(.92)!important;
+  }
+  body.resource-dragging .group{
+    transition:box-shadow .16s ease,background .16s ease,filter .16s ease;
+  }
+  body.resource-dragging .group:not(.drag-target){
+    filter:saturate(.96);
+  }
+  .group.drag-target{
+    box-shadow:
+      0 16px 42px rgba(6,26,48,.17),
+      0 0 0 2px rgba(var(--accent-rgb),.55),
+      0 0 24px rgba(var(--accent-rgb),.20),
+      inset 0 1px 0 rgba(255,255,255,.10)!important;
+  }
+  .group.drag-target .group-header{
+    background:linear-gradient(90deg,rgba(var(--accent-rgb),.14),rgba(var(--accent-rgb),.045),transparent 72%);
+  }
+  .group.drag-target .group-title::after{
+    content:"  •  Drop here";
+    color:rgba(255,255,255,.72);
+    font-size:11px;
+    font-weight:620;
+    letter-spacing:0;
+  }
+
   @media (max-width:680px){
     .toolbar,
     .toolbar.glass{padding:0!important}
@@ -736,6 +768,8 @@
   const $ = s => document.querySelector(s);
   const groupsEl = $('#groups'), tooltip = $('#tooltip'), contextMenu = $('#contextMenu');
   let activeResource = null;
+  let draggedResource = null;
+  let suppressCardClickUntil = 0;
   let selectedGroupId = 'favorites';
   const builtinIconKinds=['mail','book','ticket','doc','shield','people','chart','bulb','cloud','code','link'];
   let pendingIconChoice={mode:'auto',kind:'link',url:''};
@@ -881,7 +915,7 @@
   }
   function cardHTML(r,g){
     const title=escapeHtml(r.name), url=escapeHtml(r.url), kind=r.icon||iconKey(r.name,r.url);
-    return `<article class="resource-card" tabindex="0" data-resource-id="${escapeHtml(r.id)}" data-group-id="${escapeHtml(g.id)}" data-url="${url}" aria-label="${title}, ${url}">
+    return `<article class="resource-card" tabindex="0" draggable="true" data-resource-id="${escapeHtml(r.id)}" data-group-id="${escapeHtml(g.id)}" data-url="${url}" aria-label="${title}, ${url}">
       <div class="resource-icon">${resourceIconMarkup(r)}</div><div class="resource-name" title="${title}">${title}</div><div class="resource-meta">◷ <span>${escapeHtml(timeAgo(r.createdAt))}</span></div></article>`;
   }
   function bindRendered(){
@@ -891,14 +925,93 @@
     document.querySelectorAll('[data-move-group]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); moveGroup(groupFromEl(b).id,b.dataset.moveGroup);}));
     document.querySelectorAll('[data-group-menu]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); groupMenu(groupFromEl(b));}));
     document.querySelectorAll('.resource-card').forEach(c=>{
-      c.addEventListener('click',e=>{if(e.button===0)openResource(c);});
+      c.addEventListener('click',e=>{if(e.button===0 && Date.now()>=suppressCardClickUntil)openResource(c);});
       c.addEventListener('keydown',e=>{if(e.key==='Enter')openResource(c);if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){e.preventDefault();showContextFor(c,c.getBoundingClientRect().left+80,c.getBoundingClientRect().top+70);}});
       c.addEventListener('contextmenu',e=>{e.preventDefault();showContextFor(c,e.clientX,e.clientY);});
       c.addEventListener('mouseenter',()=>showTooltip(c)); c.addEventListener('mouseleave',hideTooltip); c.addEventListener('mousemove',positionTooltip);
+      c.addEventListener('dragstart',e=>beginResourceDrag(e,c));
+      c.addEventListener('dragend',endResourceDrag);
+    });
+    document.querySelectorAll('.group').forEach(group=>{
+      group.addEventListener('dragenter',e=>dragEnterGroup(e,group));
+      group.addEventListener('dragover',e=>dragOverGroup(e,group));
+      group.addEventListener('dragleave',e=>dragLeaveGroup(e,group));
+      group.addEventListener('drop',e=>dropResourceOnGroup(e,group));
     });
   }
   function groupFromEl(el){const id=el.closest('.group').dataset.groupId;return state.groups.find(g=>g.id===id);}
   function resourceRef(groupId,id){const g=state.groups.find(x=>x.id===groupId);return {g,r:g?.resources.find(x=>x.id===id)};}
+
+  function beginResourceDrag(e,card){
+    if(!e.dataTransfer)return;
+    draggedResource={groupId:card.dataset.groupId,resourceId:card.dataset.resourceId};
+    suppressCardClickUntil=Date.now()+500;
+    activeResource=null;
+    hideTooltip();
+    hideContext();
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',JSON.stringify(draggedResource));
+    card.classList.add('dragging');
+    document.body.classList.add('resource-dragging');
+  }
+
+  function endResourceDrag(){
+    suppressCardClickUntil=Date.now()+300;
+    draggedResource=null;
+    document.body.classList.remove('resource-dragging');
+    document.querySelectorAll('.resource-card.dragging').forEach(el=>el.classList.remove('dragging'));
+    document.querySelectorAll('.group.drag-target').forEach(el=>el.classList.remove('drag-target'));
+  }
+
+  function dragEnterGroup(e,group){
+    if(!draggedResource || group.dataset.groupId===draggedResource.groupId)return;
+    e.preventDefault();
+    document.querySelectorAll('.group.drag-target').forEach(el=>{if(el!==group)el.classList.remove('drag-target');});
+    group.classList.add('drag-target');
+  }
+
+  function dragOverGroup(e,group){
+    if(!draggedResource || group.dataset.groupId===draggedResource.groupId)return;
+    e.preventDefault();
+    if(e.dataTransfer)e.dataTransfer.dropEffect='move';
+    group.classList.add('drag-target');
+  }
+
+  function dragLeaveGroup(e,group){
+    if(group.contains(e.relatedTarget))return;
+    group.classList.remove('drag-target');
+  }
+
+  function dropResourceOnGroup(e,group){
+    if(!draggedResource)return;
+    e.preventDefault();
+    e.stopPropagation();
+    const targetGroupId=group.dataset.groupId;
+    const sourceGroupId=draggedResource.groupId;
+    const resourceId=draggedResource.resourceId;
+    group.classList.remove('drag-target');
+    if(targetGroupId===sourceGroupId){endResourceDrag();return;}
+    moveResourceToGroup(sourceGroupId,resourceId,targetGroupId);
+  }
+
+  function moveResourceToGroup(sourceGroupId,resourceId,targetGroupId){
+    const source=state.groups.find(g=>g.id===sourceGroupId);
+    const target=state.groups.find(g=>g.id===targetGroupId);
+    const resource=source?.resources.find(r=>r.id===resourceId);
+    if(!source||!target||!resource||source.id===target.id){endResourceDrag();return;}
+    source.resources=source.resources.filter(r=>r.id!==resourceId);
+    target.resources.push(resource);
+    resource.favorited=target.id==='favorites';
+    const t=nowISO();
+    resource.updatedAt=t;
+    source.updatedAt=t;
+    target.updatedAt=t;
+    const name=resource.name;
+    const destination=target.name;
+    endResourceDrag();
+    commit(`Moved ${name} to ${destination}`);
+  }
+
   function moveGroup(id,dir){const i=state.groups.findIndex(g=>g.id===id);if(i<0||id==='favorites')return;const j=dir==='up'?i-1:i+1;if(j<=0||j>=state.groups.length)return;[state.groups[i],state.groups[j]]=[state.groups[j],state.groups[i]];commit('Group order updated');}
   function groupMenu(g){
     if(g.id==='favorites'){const name=prompt('Favorites is fixed as the top group. Rename is disabled.');return;}
@@ -1026,7 +1139,7 @@
   $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
   $('#heroTitle').addEventListener('input',()=>{state.dashboard.title=$('#heroTitle').value;adjustHeroFont();saveState();}); $('#heroTitle').addEventListener('change',render);
   $('#resetSession').addEventListener('click',()=>{if(confirm('Reset this session to the default dashboard?')){sessionStorage.removeItem(STORAGE_KEY);state=defaultState();selectedGroupId='favorites';commit('Dashboard reset');closeSettings();}});
-  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import/export JSON for complete configuration portability.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
+  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Drag a resource tile onto another group to move it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import/export JSON for complete configuration portability.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
   contextMenu.addEventListener('click',e=>{const item=e.target.closest('[data-action]');if(item)contextAction(item.dataset.action);});
   document.addEventListener('click',e=>{if(!e.target.closest('#contextMenu'))hideContext();if(!e.target.closest('#iconPicker')&&!e.target.closest('#resourceIconBtn'))hideIconPicker();}); $('#newGroupModal').addEventListener('click',e=>{if(e.target===$('#newGroupModal'))hideNewGroupModal();}); window.addEventListener('blur',hideContext); window.addEventListener('resize',hideContext); document.addEventListener('scroll',hideContext,true);
 
