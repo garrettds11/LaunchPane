@@ -679,6 +679,29 @@
     letter-spacing:0;
   }
 
+  /* ===== clickable group headers + tile reordering ===== */
+  .group-header{cursor:pointer}
+  .group-header:focus-visible{
+    outline:2px solid rgba(255,255,255,.72);
+    outline-offset:-3px;
+  }
+  .group-controls{cursor:default}
+  .resource-card.reorder-before::before,
+  .resource-card.reorder-after::after{
+    content:"";
+    position:absolute;
+    z-index:8;
+    top:9%;
+    bottom:9%;
+    width:3px;
+    border-radius:999px;
+    background:var(--accent);
+    box-shadow:0 0 0 1px rgba(255,255,255,.75),0 0 10px rgba(var(--accent-rgb),.65);
+    pointer-events:none;
+  }
+  .resource-card.reorder-before::before{left:-7px}
+  .resource-card.reorder-after::after{right:-7px}
+
   @media (max-width:680px){
     .toolbar,
     .toolbar.glass{padding:0!important}
@@ -934,8 +957,8 @@
       const meta = `${g.resources.length} item${g.resources.length===1?'':'s'} • Last updated ${new Date(g.updatedAt).toLocaleString()}`;
       const cards = g.resources.length ? `<div class="resource-grid">${g.resources.map(r=>cardHTML(r,g)).join('')}</div>` : `<div class="empty-state">${g.id==='favorites'?'Favorite resources will appear here.':'No resources yet. Select this group and add one from the bar above.'}</div>`;
       return `<section class="group ${g.collapsed?'collapsed':''} ${g.id===selectedGroupId?'selected':''}" data-group-id="${escapeHtml(g.id)}">
-        <header class="group-header" data-select-group="${escapeHtml(g.id)}"><div class="group-badge">${groupIconSvg(g.icon)}</div><div class="group-title-wrap"><span class="group-title">${escapeHtml(g.name)}</span><span class="group-meta">${escapeHtml(meta)}</span></div>
-        <div class="group-controls"><button class="mini-btn" data-move-group="up" title="Move group up" ${idx===0?'disabled':''}>▲</button><button class="mini-btn" data-move-group="down" title="Move group down" ${idx===state.groups.length-1?'disabled':''}>▼</button><button class="mini-btn" data-group-menu title="Rename or delete group">•••</button><button class="collapse-pill" data-collapse>${g.collapsed?'Collapsed⌄':'Expanded⌃'}</button></div></header>
+        <header class="group-header" data-select-group="${escapeHtml(g.id)}" tabindex="0" role="button" aria-expanded="${g.collapsed?'false':'true'}" title="Click to ${g.collapsed?'expand':'collapse'} ${escapeHtml(g.name)}"><div class="group-badge">${groupIconSvg(g.icon)}</div><div class="group-title-wrap"><span class="group-title">${escapeHtml(g.name)}</span><span class="group-meta">${escapeHtml(meta)}</span></div>
+        <div class="group-controls"><button class="mini-btn" data-move-group="up" title="Move group up" ${idx===0?'disabled':''}>▲</button><button class="mini-btn" data-move-group="down" title="Move group down" ${idx===state.groups.length-1?'disabled':''}>▼</button><button class="mini-btn" data-group-menu title="Rename or delete group">•••</button></div></header>
         <div class="group-content">${cards}</div></section>`;
     }).join('');
     bindRendered();
@@ -947,8 +970,18 @@
   }
   function bindRendered(){
     bindIconFallbacks();
-    document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const g=groupFromEl(b); if(g.id==='favorites'){g.collapsed=false;}else g.collapsed=!g.collapsed;g.updatedAt=nowISO();commit();}));
-    document.querySelectorAll('[data-select-group]').forEach(h=>h.addEventListener('click',e=>{if(e.target.closest('button'))return;selectedGroupId=h.dataset.selectGroup;state.dashboard.selectedGroupId=selectedGroupId;saveState();render();}));
+    document.querySelectorAll('[data-select-group]').forEach(h=>{
+      const toggle=()=>{
+        const g=groupFromEl(h);
+        selectedGroupId=g.id;
+        state.dashboard.selectedGroupId=g.id;
+        g.collapsed=!g.collapsed;
+        g.updatedAt=nowISO();
+        commit();
+      };
+      h.addEventListener('click',e=>{if(e.target.closest('button'))return;toggle();});
+      h.addEventListener('keydown',e=>{if(e.target!==h)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+    });
     document.querySelectorAll('[data-move-group]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); moveGroup(groupFromEl(b).id,b.dataset.moveGroup);}));
     document.querySelectorAll('[data-group-menu]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation(); groupMenu(groupFromEl(b));}));
     document.querySelectorAll('.resource-card').forEach(c=>{
@@ -957,6 +990,9 @@
       c.addEventListener('contextmenu',e=>{e.preventDefault();showContextFor(c,e.clientX,e.clientY);});
       c.addEventListener('mouseenter',()=>showTooltip(c)); c.addEventListener('mouseleave',hideTooltip); c.addEventListener('mousemove',positionTooltip);
       c.addEventListener('dragstart',e=>beginResourceDrag(e,c));
+      c.addEventListener('dragover',e=>dragOverResourceCard(e,c));
+      c.addEventListener('dragleave',()=>clearReorderMarkers(c));
+      c.addEventListener('drop',e=>dropResourceOnCard(e,c));
       c.addEventListener('dragend',endResourceDrag);
     });
     document.querySelectorAll('.group').forEach(group=>{
@@ -987,7 +1023,55 @@
     draggedResource=null;
     document.body.classList.remove('resource-dragging');
     document.querySelectorAll('.resource-card.dragging').forEach(el=>el.classList.remove('dragging'));
+    document.querySelectorAll('.resource-card.reorder-before,.resource-card.reorder-after').forEach(el=>el.classList.remove('reorder-before','reorder-after'));
     document.querySelectorAll('.group.drag-target').forEach(el=>el.classList.remove('drag-target'));
+  }
+
+  function clearReorderMarkers(card){
+    card?.classList.remove('reorder-before','reorder-after');
+  }
+
+  function dragOverResourceCard(e,card){
+    if(!draggedResource || card.dataset.resourceId===draggedResource.resourceId)return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.dataTransfer)e.dataTransfer.dropEffect='move';
+    document.querySelectorAll('.resource-card.reorder-before,.resource-card.reorder-after').forEach(el=>{if(el!==card)clearReorderMarkers(el);});
+    const rect=card.getBoundingClientRect();
+    const after=e.clientX > rect.left + rect.width/2;
+    card.classList.toggle('reorder-before',!after);
+    card.classList.toggle('reorder-after',after);
+  }
+
+  function dropResourceOnCard(e,card){
+    if(!draggedResource || card.dataset.resourceId===draggedResource.resourceId)return;
+    e.preventDefault();
+    e.stopPropagation();
+    const targetGroupId=card.dataset.groupId;
+    const targetResourceId=card.dataset.resourceId;
+    const rect=card.getBoundingClientRect();
+    const insertAfter=e.clientX > rect.left + rect.width/2;
+    reorderOrMoveResource(draggedResource.groupId,draggedResource.resourceId,targetGroupId,targetResourceId,insertAfter);
+  }
+
+  function reorderOrMoveResource(sourceGroupId,resourceId,targetGroupId,targetResourceId,insertAfter){
+    const source=state.groups.find(g=>g.id===sourceGroupId);
+    const target=state.groups.find(g=>g.id===targetGroupId);
+    const sourceIndex=source?.resources.findIndex(r=>r.id===resourceId)??-1;
+    if(!source||!target||sourceIndex<0){endResourceDrag();return;}
+    const [resource]=source.resources.splice(sourceIndex,1);
+    let targetIndex=target.resources.findIndex(r=>r.id===targetResourceId);
+    if(targetIndex<0)targetIndex=target.resources.length;
+    else if(insertAfter)targetIndex++;
+    target.resources.splice(targetIndex,0,resource);
+    resource.favorited=target.id==='favorites';
+    const t=nowISO();
+    resource.updatedAt=t;
+    source.updatedAt=t;
+    target.updatedAt=t;
+    const sameGroup=source.id===target.id;
+    endResourceDrag();
+    commit(sameGroup?`Reordered ${resource.name}`:`Moved ${resource.name} to ${target.name}`);
   }
 
   function dragEnterGroup(e,group){
@@ -998,7 +1082,9 @@
   }
 
   function dragOverGroup(e,group){
-    if(!draggedResource || group.dataset.groupId===draggedResource.groupId)return;
+    if(!draggedResource)return;
+    if(e.target.closest('.resource-card'))return;
+    if(group.dataset.groupId===draggedResource.groupId)return;
     e.preventDefault();
     if(e.dataTransfer)e.dataTransfer.dropEffect='move';
     group.classList.add('drag-target');
@@ -1349,7 +1435,7 @@
   $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
   $('#heroTitle').addEventListener('input',()=>{state.dashboard.title=$('#heroTitle').value;adjustHeroFont();saveState();}); $('#heroTitle').addEventListener('change',render);
   $('#resetSession').addEventListener('click',()=>{if(confirm('Reset this session to the default dashboard?')){sessionStorage.removeItem(STORAGE_KEY);state=defaultState();selectedGroupId='favorites';commit('Dashboard reset');closeSettings();}});
-  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Drag a resource tile onto another group to move it.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import LaunchPane JSON or standard Chrome bookmark HTML files.\n• Import/export JSON for complete configuration portability.\n• Settings can rebuild a Chrome-compatible bookmarks HTML file from a saved LaunchPane JSON export.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
+  $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Click a group header to collapse or expand it.\n• Drag resource tiles to reorder them within a group or move them between groups.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import LaunchPane JSON or standard Chrome bookmark HTML files.\n• Import/export JSON for complete configuration portability.\n• Settings can rebuild a Chrome-compatible bookmarks HTML file from a saved LaunchPane JSON export.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
   contextMenu.addEventListener('click',e=>{const item=e.target.closest('[data-action]');if(item)contextAction(item.dataset.action);});
   document.addEventListener('click',e=>{if(!e.target.closest('#contextMenu'))hideContext();if(!e.target.closest('#iconPicker')&&!e.target.closest('#resourceIconBtn'))hideIconPicker();}); $('#newGroupModal').addEventListener('click',e=>{if(e.target===$('#newGroupModal'))hideNewGroupModal();}); window.addEventListener('blur',hideContext); window.addEventListener('resize',hideContext); document.addEventListener('scroll',hideContext,true);
 
