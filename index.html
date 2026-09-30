@@ -120,7 +120,7 @@
   .resource-icon svg{width:58px;height:58px;display:block}
   .resource-name{font-size:16px;font-weight:780;color:#14253f;text-align:center;max-width:100%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
   .resource-meta{display:flex;gap:6px;align-items:center;margin-top:11px;color:#728399;font-size:11px;font-weight:620}
-  .resource-tooltip{pointer-events:none;position:fixed;z-index:9999;max-width:min(380px,80vw);background:#172236;color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;box-shadow:0 12px 28px rgba(0,0,0,.28);opacity:0;transform:translate(-50%,-10px);transition:opacity .12s ease;word-break:break-all}
+  .resource-tooltip{pointer-events:none;position:fixed;z-index:9999;max-width:min(380px,80vw);background:#172236;color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;box-shadow:0 12px 28px rgba(0,0,0,.28);opacity:0;transform:none;transition:opacity .12s ease;word-break:break-all}
   .resource-tooltip.show{opacity:1}
   .empty-state{padding:22px 4px 4px;color:rgba(240,248,255,.78);font-size:13px;text-align:center}
   .context-menu{position:fixed;z-index:10000;display:none;width:200px;padding:7px;background:rgba(255,255,255,.96);border:1px solid rgba(49,83,116,.13);border-radius:13px;box-shadow:0 22px 48px rgba(12,31,54,.28);backdrop-filter:blur(18px)}
@@ -1007,7 +1007,7 @@
       c.addEventListener('click',e=>{if(e.button===0 && Date.now()>=suppressCardClickUntil)openResource(c);});
       c.addEventListener('keydown',e=>{if(e.key==='Enter')openResource(c);if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){e.preventDefault();showContextFor(c,c.getBoundingClientRect().left+80,c.getBoundingClientRect().top+70);}});
       c.addEventListener('contextmenu',e=>{e.preventDefault();showContextFor(c,e.clientX,e.clientY);});
-      c.addEventListener('mouseenter',()=>showTooltip(c)); c.addEventListener('mouseleave',hideTooltip); c.addEventListener('mousemove',positionTooltip);
+      c.addEventListener('mouseenter',e=>{showTooltip(c);positionTooltip(e);}); c.addEventListener('mouseleave',hideTooltip); c.addEventListener('mousemove',positionTooltip);
       c.addEventListener('dragstart',e=>beginResourceDrag(e,c));
       c.addEventListener('dragover',e=>dragOverResourceCard(e,c));
       c.addEventListener('dragleave',()=>clearReorderMarkers(c));
@@ -1162,8 +1162,16 @@
   function hideNewGroupModal(){ $('#newGroupModal').classList.remove('show'); }
   function createGroup(){const name=$('#newGroupName').value.trim();if(!name){toastMsg('Enter a group name');$('#newGroupName').focus();return;}const t=nowISO(),g={id:uid('grp'),name,icon:'folder',collapsed:true,createdAt:t,updatedAt:t,userCreated:true,resources:[]};state.groups.push(g);selectedGroupId=g.id;hideNewGroupModal();commit('New group created');}
   function openResource(card){const {r}=resourceRef(card.dataset.groupId,card.dataset.resourceId); if(r?.url)window.open(r.url,'_blank','noopener,noreferrer');}
-  function showTooltip(card){tooltip.textContent=card.dataset.url;tooltip.classList.add('show');const rect=card.getBoundingClientRect();tooltip.style.left=(rect.left+rect.width/2)+'px';tooltip.style.top=(rect.top-6)+'px';}
-  function positionTooltip(e){if(!tooltip.classList.contains('show'))return;tooltip.style.left=Math.min(window.innerWidth-190,Math.max(190,e.clientX))+'px';tooltip.style.top=Math.min(window.innerHeight-34,e.clientY+22)+'px';}
+  function showTooltip(card){tooltip.textContent=card.dataset.url;tooltip.classList.add('show');}
+  function positionTooltip(e){
+    if(!tooltip.classList.contains('show'))return;
+    const gap=16,pad=10,w=tooltip.offsetWidth||300,h=tooltip.offsetHeight||34;
+    let left=e.clientX+gap,top=e.clientY+gap;
+    if(left+w>window.innerWidth-pad)left=Math.max(pad,e.clientX-w-gap);
+    if(top+h>window.innerHeight-pad)top=Math.max(pad,e.clientY-h-gap);
+    tooltip.style.left=left+'px';
+    tooltip.style.top=top+'px';
+  }
   function hideTooltip(){tooltip.classList.remove('show');}
   function showContextFor(card,x,y){document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));card.classList.add('selected');activeResource={groupId:card.dataset.groupId,resourceId:card.dataset.resourceId};const favItem=contextMenu.querySelector('[data-action="favorite"] span');favItem.textContent=card.dataset.groupId==='favorites'?'Remove from Favorites':'Add to Favorites';contextMenu.classList.add('show');const w=190,h=210;contextMenu.style.left=Math.min(x,window.innerWidth-w-10)+'px';contextMenu.style.top=Math.min(y,window.innerHeight-h-10)+'px';}
   function hideContext(){contextMenu.classList.remove('show');document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));}
