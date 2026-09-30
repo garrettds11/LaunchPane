@@ -338,11 +338,11 @@
   .hero input{text-shadow:0 2px 18px rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.20);font-weight:680}
   .hero .tagline{margin-top:5px;text-shadow:0 2px 12px rgba(0,0,0,.24);font-size:13px;letter-spacing:.24em}
 
-  /* Group panes stay darker than the toolbar but lose hard borders. */
+  /* Group panes use neutral/accent glass rather than a fixed navy tint. */
   .group,.group:first-child{border:0;box-shadow:0 16px 42px rgba(6,26,48,.17),inset 0 1px 0 rgba(255,255,255,.075)}
-  .group{background:linear-gradient(135deg,rgba(18,49,79,.47),rgba(36,70,102,.34))}
-  .group:first-child{background:linear-gradient(135deg,rgba(16,47,78,.53),rgba(37,71,105,.39))}
-  .group.selected{border:0;box-shadow:0 16px 42px rgba(6,26,48,.17),inset 0 1px 0 rgba(255,255,255,.075)}
+  .group{background:linear-gradient(135deg,var(--glass-group-a),var(--glass-group-b))}
+  .group:first-child{background:linear-gradient(135deg,rgba(255,255,255,.085),rgba(var(--accent-rgb),.09))}
+  .group.selected{border:0;box-shadow:0 16px 42px rgba(6,26,48,.17),0 0 0 1px rgba(var(--accent-rgb),.09),inset 0 1px 0 rgba(255,255,255,.075)}
   .group-header{min-height:64px;padding:0 18px;gap:10px}
   .group-badge{width:28px;height:28px;border:0;border-radius:0;background:none!important;box-shadow:none!important;color:#fff}
   .group-badge svg{width:25px;height:25px;display:block;overflow:visible;filter:drop-shadow(0 3px 6px rgba(0,0,0,.12))}
