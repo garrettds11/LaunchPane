@@ -822,6 +822,7 @@
   <button class="menu-item" data-action="open">↗ <span>Open</span></button>
   <button class="menu-item" data-action="favorite">☆ <span>Add to Favorites</span></button>
   <button class="menu-item" data-action="move">⇄ <span>Move to Group…</span></button>
+  <button class="menu-item" data-action="duplicate">⧉ <span>Duplicate Link</span></button>
   <button class="menu-item" data-action="edit">✎ <span>Edit Link</span></button>
   <button class="menu-item danger" data-action="delete">♲ <span>Delete Link</span></button>
 </div>
@@ -1174,12 +1175,13 @@
     tooltip.style.top=top+'px';
   }
   function hideTooltip(){tooltip.classList.remove('show');}
-  function showContextFor(card,x,y){document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));card.classList.add('selected');activeResource={groupId:card.dataset.groupId,resourceId:card.dataset.resourceId};const favItem=contextMenu.querySelector('[data-action="favorite"] span');favItem.textContent=card.dataset.groupId==='favorites'?'Remove from Favorites':'Add to Favorites';contextMenu.classList.add('show');const w=190,h=210;contextMenu.style.left=Math.min(x,window.innerWidth-w-10)+'px';contextMenu.style.top=Math.min(y,window.innerHeight-h-10)+'px';}
+  function showContextFor(card,x,y){document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));card.classList.add('selected');activeResource={groupId:card.dataset.groupId,resourceId:card.dataset.resourceId};const favItem=contextMenu.querySelector('[data-action="favorite"] span');favItem.textContent=card.dataset.groupId==='favorites'?'Remove from Favorites':'Add to Favorites';contextMenu.classList.add('show');const w=190,h=250;contextMenu.style.left=Math.min(x,window.innerWidth-w-10)+'px';contextMenu.style.top=Math.min(y,window.innerHeight-h-10)+'px';}
   function hideContext(){contextMenu.classList.remove('show');document.querySelectorAll('.resource-card.selected').forEach(e=>e.classList.remove('selected'));}
   function contextAction(action){if(!activeResource)return;const {g,r}=resourceRef(activeResource.groupId,activeResource.resourceId);if(!g||!r)return;
     if(action==='open')window.open(r.url,'_blank','noopener,noreferrer');
     if(action==='delete'&&confirm(`Delete “${r.name}”?`)){g.resources=g.resources.filter(x=>x.id!==r.id);g.updatedAt=nowISO();commit('Link deleted');}
     if(action==='edit'){showEditResourceModal(g,r);hideContext();return;}
+    if(action==='duplicate')duplicateResource(g,r);
     if(action==='favorite')toggleFavorite(g,r);
     if(action==='move')moveResource(g,r);
     hideContext();
@@ -1218,6 +1220,16 @@
     g.updatedAt=r.updatedAt;
     hideEditResourceModal();
     commit('Resource updated');
+  }
+
+  function duplicateResource(g,r){
+    const i=g.resources.findIndex(x=>x.id===r.id);
+    if(i<0)return;
+    const t=nowISO();
+    const copy={...r,id:uid('res'),name:r.name+' Copy',createdAt:t,updatedAt:t,favorited:g.id==='favorites'};
+    g.resources.splice(i+1,0,copy);
+    g.updatedAt=t;
+    commit(`Duplicated ${r.name}`);
   }
 
   function toggleFavorite(g,r){const fav=state.groups[0]; if(g.id==='favorites'){
