@@ -1156,7 +1156,7 @@
 
   function addResource(){
     const name=$('#resourceName').value.trim(), url=normalizeUrl($('#resourceUrl').value); if(!name||!url){toastMsg('Enter both a resource name and URL');return;} if(!validUrl(url)){toastMsg('Enter a valid http(s) or file URL');return;}
-    const g=state.groups.find(x=>x.id===selectedGroupId)||state.groups[0]; const t=nowISO(); const fallback=iconKey(name,url); g.resources.push({id:uid('res'),name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:fallback,iconMode:pendingIconChoice.mode,iconUrl:pendingIconChoice.mode==='url'?pendingIconChoice.url:'',iconSourceUrl:url,createdAt:t,updatedAt:t,favorited:g.id==='favorites'});g.updatedAt=t;g.collapsed=false;$('#resourceName').value='';$('#resourceUrl').value='';pendingIconChoice={mode:'auto',kind:'link',url:''};updateIconPreview();commit(`Added ${name} to ${g.name}`);
+    const g=state.groups.find(x=>x.id===selectedGroupId)||state.groups[0]; const t=nowISO(); const fallback=iconKey(name,url); g.resources.push({id:uid('res'),name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:fallback,iconMode:pendingIconChoice.mode==='auto'?'url':pendingIconChoice.mode,iconUrl:pendingIconChoice.mode==='auto'?faviconServiceUrl(url):(pendingIconChoice.mode==='url'?pendingIconChoice.url:''),iconSourceUrl:url,createdAt:t,updatedAt:t,favorited:g.id==='favorites'});g.updatedAt=t;g.collapsed=false;$('#resourceName').value='';$('#resourceUrl').value='';pendingIconChoice={mode:'auto',kind:'link',url:''};updateIconPreview();commit(`Added ${name} to ${g.name}`);
   }
   function showNewGroupModal(){ $('#newGroupName').value=''; $('#newGroupModal').classList.add('show'); setTimeout(()=>$('#newGroupName').focus(),0); }
   function hideNewGroupModal(){ $('#newGroupModal').classList.remove('show'); }
@@ -1178,7 +1178,13 @@
   let editingResource=null;
   function showEditResourceModal(g,r){
     // Freeze the currently displayed automatic favicon before its destination URL can change.
-    if(r.iconMode==='auto'&&!r.iconSourceUrl)r.iconSourceUrl=r.url;
+    if(r.iconMode==='auto'){
+      const source=r.iconSourceUrl||r.url;
+      r.iconUrl=faviconServiceUrl(source);
+      r.iconSourceUrl=source;
+      r.iconMode='url';
+      saveState();
+    }
     editingResource={groupId:g.id,resourceId:r.id};
     $('#editResourceName').value=r.name;
     $('#editResourceUrl').value=r.url;
@@ -1198,7 +1204,7 @@
     if(!name||!validUrl(url)){toastMsg('Name and valid URL required');return;}
     r.name=name;
     r.url=url;
-    // Deliberately preserve icon, iconMode, and iconUrl when the URL changes.
+    // Icon identity is independent of the destination URL; never recalculate it here.
     r.updatedAt=nowISO();
     g.updatedAt=r.updatedAt;
     hideEditResourceModal();
@@ -1445,9 +1451,9 @@
           name:item.title,
           url:item.href,
           icon:iconKey(item.title,item.href),
-          iconMode:'auto',
-          iconUrl:'',
-          iconSourceUrl:url,
+          iconMode:'url',
+          iconUrl:faviconServiceUrl(item.href),
+          iconSourceUrl:item.href,
           createdAt:created,
           updatedAt:t,
           favorited:group.id==='favorites'
