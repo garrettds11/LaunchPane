@@ -889,7 +889,7 @@
     }
     out.groups = Array.isArray(s.groups) ? s.groups.map((g,i)=>({
       id:String(g.id||uid('grp')), name:String(g.name||`Group ${i+1}`), icon:String(g.icon||'◈'), collapsed:i===0?false:Boolean(g.collapsed), createdAt:g.createdAt||nowISO(), updatedAt:g.updatedAt||nowISO(), userCreated:Boolean(g.userCreated),
-      resources:Array.isArray(g.resources)?g.resources.map(r=>({id:String(r.id||uid('res')),name:String(r.name||'Untitled'),url:String(r.url||''),icon:String(r.icon||iconKey(r.name,r.url)),iconMode:['auto','builtin','url'].includes(r.iconMode)?r.iconMode:(r.iconUrl?'url':'builtin'),iconUrl:String(r.iconUrl||''),createdAt:r.createdAt||nowISO(),updatedAt:r.updatedAt||r.createdAt||nowISO(),favorited:Boolean(r.favorited)})):[]
+      resources:Array.isArray(g.resources)?g.resources.map(r=>({id:String(r.id||uid('res')),name:String(r.name||'Untitled'),url:String(r.url||''),icon:String(r.icon||iconKey(r.name,r.url)),iconMode:['auto','builtin','url'].includes(r.iconMode)?r.iconMode:(r.iconUrl?'url':'builtin'),iconUrl:String(r.iconUrl||''),iconSourceUrl:String(r.iconSourceUrl||r.url||''),createdAt:r.createdAt||nowISO(),updatedAt:r.updatedAt||r.createdAt||nowISO(),favorited:Boolean(r.favorited)})):[]
     })) : base.groups;
     let fav = out.groups.find(g=>g.id==='favorites' || g.name.toLowerCase()==='favorites');
     if(!fav){fav={id:'favorites',name:'Favorites',icon:'star',collapsed:false,createdAt:nowISO(),updatedAt:nowISO(),resources:[]};out.groups.unshift(fav);} else {fav.id='favorites';fav.name='Favorites';fav.icon='star';fav.collapsed=false;out.groups=[fav,...out.groups.filter(g=>g!==fav)];}
@@ -956,8 +956,8 @@
     const fallback=r.icon||iconKey(r.name,r.url);
     let src='';
     if(r.iconMode==='url'&&r.iconUrl)src=r.iconUrl;
-    else if(r.iconMode==='auto')src=faviconServiceUrl(r.url);
-    if(src)return `<img class="remote-resource-icon" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback-kind="${escapeHtml(fallback)}" data-fallback-seed="${escapeHtml(r.url||r.name)}">`;
+    else if(r.iconMode==='auto')src=faviconServiceUrl(r.iconSourceUrl||r.url);
+    if(src)return `<img class="remote-resource-icon" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback-kind="${escapeHtml(fallback)}" data-fallback-seed="${escapeHtml(r.iconSourceUrl||r.url||r.name)}">`;
     return iconSvg(fallback,r.url||r.name);
   }
   function bindIconFallbacks(root=document){
@@ -1156,7 +1156,7 @@
 
   function addResource(){
     const name=$('#resourceName').value.trim(), url=normalizeUrl($('#resourceUrl').value); if(!name||!url){toastMsg('Enter both a resource name and URL');return;} if(!validUrl(url)){toastMsg('Enter a valid http(s) or file URL');return;}
-    const g=state.groups.find(x=>x.id===selectedGroupId)||state.groups[0]; const t=nowISO(); const fallback=iconKey(name,url); g.resources.push({id:uid('res'),name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:fallback,iconMode:pendingIconChoice.mode,iconUrl:pendingIconChoice.mode==='url'?pendingIconChoice.url:'',createdAt:t,updatedAt:t,favorited:g.id==='favorites'});g.updatedAt=t;g.collapsed=false;$('#resourceName').value='';$('#resourceUrl').value='';pendingIconChoice={mode:'auto',kind:'link',url:''};updateIconPreview();commit(`Added ${name} to ${g.name}`);
+    const g=state.groups.find(x=>x.id===selectedGroupId)||state.groups[0]; const t=nowISO(); const fallback=iconKey(name,url); g.resources.push({id:uid('res'),name,url,icon:pendingIconChoice.mode==='builtin'?pendingIconChoice.kind:fallback,iconMode:pendingIconChoice.mode,iconUrl:pendingIconChoice.mode==='url'?pendingIconChoice.url:'',iconSourceUrl:url,createdAt:t,updatedAt:t,favorited:g.id==='favorites'});g.updatedAt=t;g.collapsed=false;$('#resourceName').value='';$('#resourceUrl').value='';pendingIconChoice={mode:'auto',kind:'link',url:''};updateIconPreview();commit(`Added ${name} to ${g.name}`);
   }
   function showNewGroupModal(){ $('#newGroupName').value=''; $('#newGroupModal').classList.add('show'); setTimeout(()=>$('#newGroupName').focus(),0); }
   function hideNewGroupModal(){ $('#newGroupModal').classList.remove('show'); }
@@ -1177,6 +1177,8 @@
   }
   let editingResource=null;
   function showEditResourceModal(g,r){
+    // Freeze the currently displayed automatic favicon before its destination URL can change.
+    if(r.iconMode==='auto'&&!r.iconSourceUrl)r.iconSourceUrl=r.url;
     editingResource={groupId:g.id,resourceId:r.id};
     $('#editResourceName').value=r.name;
     $('#editResourceUrl').value=r.url;
@@ -1445,6 +1447,7 @@
           icon:iconKey(item.title,item.href),
           iconMode:'auto',
           iconUrl:'',
+          iconSourceUrl:url,
           createdAt:created,
           updatedAt:t,
           favorited:group.id==='favorites'
