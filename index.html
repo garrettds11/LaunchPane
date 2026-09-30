@@ -792,6 +792,15 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="editResourceModal" role="dialog" aria-modal="true" aria-labelledby="editResourceTitle">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-icon">✎</div><div><h2 id="editResourceTitle">Edit Resource</h2><p>Update the tile name or destination URL. The existing icon will be preserved.</p></div></div>
+    <div class="setting" style="margin-top:18px"><label for="editResourceName">Resource name</label><input id="editResourceName" maxlength="120" autocomplete="off"></div>
+    <div class="setting"><label for="editResourceUrl">Resource URL</label><input id="editResourceUrl" autocomplete="off" spellcheck="false"></div>
+    <div class="modal-actions"><button class="btn primary" id="saveResourceEdit">Save Changes</button><button class="btn" id="cancelResourceEdit">Cancel</button></div>
+  </div>
+</div>
+
 <aside class="drawer" id="settingsDrawer" aria-label="Dashboard settings">
   <div class="drawer-inner">
     <div class="drawer-head"><h2>Dashboard Settings</h2><button class="close" id="closeSettings" aria-label="Close settings">×</button></div>
@@ -1161,11 +1170,39 @@
   function contextAction(action){if(!activeResource)return;const {g,r}=resourceRef(activeResource.groupId,activeResource.resourceId);if(!g||!r)return;
     if(action==='open')window.open(r.url,'_blank','noopener,noreferrer');
     if(action==='delete'&&confirm(`Delete “${r.name}”?`)){g.resources=g.resources.filter(x=>x.id!==r.id);g.updatedAt=nowISO();commit('Link deleted');}
-    if(action==='edit'){const name=prompt('Resource name:',r.name);if(name===null)return;const url=prompt('Resource URL:',r.url);if(url===null)return;const nurl=normalizeUrl(url);if(!name.trim()||!validUrl(nurl)){toastMsg('Name and valid URL required');return;}r.name=name.trim();r.url=nurl;if(r.iconMode==='auto'){r.icon=iconKey(r.name,r.url);r.iconUrl='';}r.updatedAt=nowISO();g.updatedAt=nowISO();commit('Link updated');}
+    if(action==='edit'){showEditResourceModal(g,r);hideContext();return;}
     if(action==='favorite')toggleFavorite(g,r);
     if(action==='move')moveResource(g,r);
     hideContext();
   }
+  let editingResource=null;
+  function showEditResourceModal(g,r){
+    editingResource={groupId:g.id,resourceId:r.id};
+    $('#editResourceName').value=r.name;
+    $('#editResourceUrl').value=r.url;
+    $('#editResourceModal').classList.add('show');
+    setTimeout(()=>$('#editResourceName').focus(),0);
+  }
+  function hideEditResourceModal(){
+    $('#editResourceModal').classList.remove('show');
+    editingResource=null;
+  }
+  function saveResourceEdit(){
+    if(!editingResource)return;
+    const {g,r}=resourceRef(editingResource.groupId,editingResource.resourceId);
+    if(!g||!r){hideEditResourceModal();return;}
+    const name=$('#editResourceName').value.trim();
+    const url=normalizeUrl($('#editResourceUrl').value);
+    if(!name||!validUrl(url)){toastMsg('Name and valid URL required');return;}
+    r.name=name;
+    r.url=url;
+    // Deliberately preserve icon, iconMode, and iconUrl when the URL changes.
+    r.updatedAt=nowISO();
+    g.updatedAt=r.updatedAt;
+    hideEditResourceModal();
+    commit('Resource updated');
+  }
+
   function toggleFavorite(g,r){const fav=state.groups[0]; if(g.id==='favorites'){
       const destinations=state.groups.slice(1);if(!destinations.length){toastMsg('Create another group before removing from Favorites');return;}
       const name=prompt('Move this favorite to which group?\n'+destinations.map(x=>x.name).join(', '),destinations[0].name);const d=destinations.find(x=>x.name.toLowerCase()===String(name).trim().toLowerCase());if(!d){toastMsg('Group not found');return;}fav.resources=fav.resources.filter(x=>x.id!==r.id);r.favorited=false;d.resources.push(r);d.updatedAt=nowISO();fav.updatedAt=nowISO();commit('Removed from Favorites');
@@ -1445,6 +1482,7 @@
 
   $('#addResourceBtn').addEventListener('click',addResource); $('#resourceUrl').addEventListener('keydown',e=>{if(e.key==='Enter')addResource();}); $('#resourceIconBtn').addEventListener('click',e=>{e.stopPropagation();$('#iconPicker').classList.contains('show')?hideIconPicker():showIconPicker();}); ['resourceName','resourceUrl'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(pendingIconChoice.mode==='auto')updateIconPreview();})); $('#newGroupBtn').addEventListener('click',showNewGroupModal);
   $('#createGroupBtn').addEventListener('click',createGroup); $('#closeNewGroup').addEventListener('click',hideNewGroupModal); $('#cancelNewGroup').addEventListener('click',hideNewGroupModal); $('#newGroupName').addEventListener('keydown',e=>{if(e.key==='Enter')createGroup();if(e.key==='Escape')hideNewGroupModal();});
+  $('#saveResourceEdit').addEventListener('click',saveResourceEdit); $('#cancelResourceEdit').addEventListener('click',hideEditResourceModal); $('#editResourceModal').addEventListener('click',e=>{if(e.target.id==='editResourceModal')hideEditResourceModal();}); $('#editResourceUrl').addEventListener('keydown',e=>{if(e.key==='Enter')saveResourceEdit();});
   $('#importBtn').addEventListener('click',showImportModal); $('#importBookmarksBtn').addEventListener('click',()=>$('#bookmarksFile').click()); $('#chooseImport').addEventListener('click',()=>$('#importFile').click()); $('#chooseBookmarksImport').addEventListener('click',()=>$('#bookmarksFile').click()); $('#closeImport').addEventListener('click',hideImportModal); $('#skipImport').addEventListener('click',hideImportModal); $('#importFile').addEventListener('change',e=>{importJsonFile(e.target.files[0]);e.target.value='';}); $('#bookmarksFile').addEventListener('change',e=>{importChromeBookmarksFile(e.target.files[0]);e.target.value='';});
   $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson); $('#buildChromeBookmarks').addEventListener('click',()=>$('#chromeSourceJsonFile').click()); $('#chromeSourceJsonFile').addEventListener('change',e=>{buildChromeBookmarksFromJsonFile(e.target.files[0]);e.target.value='';});
   $('#settingsBtn').addEventListener('click',openSettings); $('#closeSettings').addEventListener('click',closeSettings); $('#applySettings').addEventListener('click',applySettings);
