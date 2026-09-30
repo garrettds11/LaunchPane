@@ -1165,9 +1165,10 @@
   function showTooltip(card){tooltip.textContent=card.dataset.url;tooltip.classList.add('show');}
   function positionTooltip(e){
     if(!tooltip.classList.contains('show'))return;
-    const gap=16,pad=10,w=tooltip.offsetWidth||300,h=tooltip.offsetHeight||34;
-    let left=e.clientX+gap,top=e.clientY+gap;
-    if(left+w>window.innerWidth-pad)left=Math.max(pad,e.clientX-w-gap);
+    const gap=28,pad=10,w=tooltip.offsetWidth||300,h=tooltip.offsetHeight||34;
+    let left=e.clientX-(w/2);
+    let top=e.clientY+gap;
+    left=Math.max(pad,Math.min(window.innerWidth-w-pad,left));
     if(top+h>window.innerHeight-pad)top=Math.max(pad,e.clientY-h-gap);
     tooltip.style.left=left+'px';
     tooltip.style.top=top+'px';
