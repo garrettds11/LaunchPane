@@ -12,7 +12,16 @@
     --text:#10213d;
     --muted:#6d7f95;
     --bg-color:rgb(113,157,198);
-    --overlay:rgba(8,26,48,.32);
+    --overlay:rgba(0,0,0,.30);
+    --chrome-bg:rgba(255,255,255,.15);
+    --chrome-bg-strong:rgba(241,248,254,.54);
+    --chrome-hover:rgba(255,255,255,.21);
+    --chrome-text:#fff;
+    --chrome-input-text:#173451;
+    --chrome-placeholder:rgba(35,65,93,.58);
+    --chrome-label:rgba(255,255,255,.92);
+    --chrome-border:rgba(255,255,255,.12);
+    --chrome-shadow:rgba(5,25,47,.11);
     --page-max:1540px;
     --glass-light:rgba(237,246,255,.66);
     --glass-light-2:rgba(210,229,247,.48);
@@ -156,8 +165,8 @@
     --glass-top:rgba(240,248,255,.56);
     --glass-top-soft:rgba(219,234,248,.42);
     --glass-top-border:rgba(255,255,255,.58);
-    --glass-group-a:rgba(20,50,79,.46);
-    --glass-group-b:rgba(37,70,102,.37);
+    --glass-group-a:rgba(255,255,255,.075);
+    --glass-group-b:rgba(var(--accent-rgb),.075);
     --glass-group-border:rgba(255,255,255,.24);
     --accent-soft:rgba(var(--accent-rgb),.12);
     --accent-wash:rgba(var(--accent-rgb),.075);
@@ -233,7 +242,7 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.075)
   }
   .group:first-child{
-    background:linear-gradient(135deg,rgba(16,47,78,.50),rgba(37,71,105,.40));
+    background:linear-gradient(135deg,rgba(255,255,255,.085),rgba(var(--accent-rgb),.09));
     border-color:rgba(255,255,255,.28)
   }
   .group.selected{border-color:var(--accent-border);box-shadow:0 20px 48px rgba(8,29,52,.18),0 0 0 1px rgba(var(--accent-rgb),.09),inset 0 1px 0 rgba(255,255,255,.06)}
@@ -459,32 +468,32 @@
     content:none!important;
   }
   .toolbar .field label{
-    color:rgba(255,255,255,.92);
+    color:var(--chrome-label);
     text-shadow:0 1px 5px rgba(0,0,0,.25);
   }
   .toolbar .field input,
   .toolbar .btn{
-    border:1px solid rgba(255,255,255,.12)!important;
-    background:rgba(255,255,255,.15)!important;
+    border:1px solid var(--chrome-border)!important;
+    background:var(--chrome-bg)!important;
     backdrop-filter:blur(10px) saturate(1.28) brightness(1.04);
     -webkit-backdrop-filter:blur(10px) saturate(1.28) brightness(1.04);
     box-shadow:
       inset 1px -1px 1px rgba(255,255,255,.45),
       inset -1px 1px 1px rgba(255,255,255,.28),
-      0 5px 14px rgba(5,25,47,.11)!important;
+      0 5px 14px var(--chrome-shadow)!important;
   }
   .toolbar .field input{
-    color:#173451;
-    background:rgba(241,248,254,.54)!important;
+    color:var(--chrome-input-text);
+    background:var(--chrome-bg-strong)!important;
   }
-  .toolbar .field input::placeholder{color:rgba(35,65,93,.58)}
+  .toolbar .field input::placeholder{color:var(--chrome-placeholder)}
   .toolbar .btn{
-    color:#fff;
+    color:var(--chrome-text);
     text-shadow:0 1px 5px rgba(0,0,0,.20);
   }
   .toolbar .btn:hover{
     transform:translateY(-1px);
-    background:rgba(255,255,255,.21)!important;
+    background:var(--chrome-hover)!important;
     box-shadow:
       inset 1px -1px 1px rgba(255,255,255,.58),
       inset -1px 1px 1px rgba(255,255,255,.34),
@@ -791,7 +800,8 @@
     <div class="setting"><label>Background RGB</label><div class="setting-row"><input id="rgbR" type="number" min="0" max="255" placeholder="R"><input id="rgbG" type="number" min="0" max="255" placeholder="G"><input id="rgbB" type="number" min="0" max="255" placeholder="B"></div><small>Used when no background image is active.</small></div>
     <div class="setting"><label for="backgroundPath">Background image URL / path</label><input id="backgroundPath" placeholder="https://… or local relative path"><small id="backgroundSourceNote">Browser security prevents retaining a real local filesystem path from a file picker. Uploaded files are embedded in the configuration and the filename is recorded as metadata.</small></div>
     <div class="setting"><label>Or upload a background image</label><button class="btn" id="pickBackground">▣ &nbsp;Choose Image</button></div>
-    <div class="setting"><label for="overlayRange">Background shading overlay</label><div class="range-line"><input id="overlayRange" type="range" min="0" max="85" value="34"><span class="range-value" id="overlayValue">34%</span></div></div>
+    <div class="setting"><label for="shadeMode">Background shade</label><select id="shadeMode"><option value="dark">Dark</option><option value="light">Light</option></select><small>Dark uses a black shade; Light uses a white shade. This also keeps the toolbar controls readable against the background.</small></div>
+    <div class="setting"><label for="overlayRange">Shade opacity</label><div class="range-line"><input id="overlayRange" type="range" min="0" max="100" value="30"><span class="range-value" id="overlayValue">30%</span></div></div>
     <div class="setting"><label for="accentColor">Accent color</label><input id="accentColor" type="color" value="#377dff" style="padding:4px"></div>
     <div class="drawer-actions"><button class="btn primary" id="applySettings">Apply Settings</button><button class="btn" id="downloadSettings">Export JSON</button></div>
     <div class="setting" style="margin-top:22px"><label>Chrome bookmarks file</label><button class="btn" id="buildChromeBookmarks">☆ &nbsp;Build from saved JSON</button><small>Choose a LaunchPane JSON export. LaunchPane will download a Chrome-compatible bookmarks HTML file with each group rebuilt as a bookmark folder.</small></div>
@@ -846,7 +856,7 @@
     return {
       schema: SCHEMA, version: VERSION, exportedAt:null,
       dashboard:{ title:'Welcome, Garrett', tagline:'Your apps. Your tools. All in one place.', selectedGroupId:'favorites' },
-      appearance:{ accent:'#3d7cff', background:{ type:'scenic', source:'builtin', color:{r:113,g:157,b:198}, imagePath:'', imageData:'', imageName:'Mountain Lake', overlay:30, position:'center', size:'cover' } },
+      appearance:{ accent:'#3d7cff', background:{ type:'scenic', source:'builtin', color:{r:113,g:157,b:198}, imagePath:'', imageData:'', imageName:'Mountain Lake', overlay:30, shadeMode:'dark', position:'center', size:'cover' } },
       groups:[
         {id:'favorites',name:'Favorites',icon:'star',collapsed:false,createdAt:t,updatedAt:t,resources:[
           sample('Email','https://mail.example.com','mail',t), sample('Wiki','https://portal.example.com/wiki','book',t), sample('Tickets','https://tickets.example.com','ticket',t), sample('Docs','https://docs.example.com','doc',t), sample('VPN','https://vpn.example.com','shield',t), sample('HR','https://hr.example.com','people',t), sample('Monitoring','https://monitoring.example.com','chart',t), sample('Knowledge','https://kb.example.com','bulb',t)
@@ -1195,7 +1205,13 @@
     document.documentElement.style.setProperty('--accent',accent);
     const hex=accent.replace('#',''); if(hex.length===6){document.documentElement.style.setProperty('--accent-rgb',`${parseInt(hex.slice(0,2),16)},${parseInt(hex.slice(2,4),16)},${parseInt(hex.slice(4,6),16)}`);}
     document.documentElement.style.setProperty('--bg-color',`rgb(${c.r},${c.g},${c.b})`);
-    document.documentElement.style.setProperty('--overlay',`rgba(7,23,43,${Math.max(0,Math.min(85,Number(bg.overlay)||0))/100})`);
+    const shadeMode=bg.shadeMode==='light'?'light':'dark';
+    const shadeOpacity=Math.max(0,Math.min(100,Number(bg.overlay)||0))/100;
+    document.documentElement.style.setProperty('--overlay',shadeMode==='light'?`rgba(255,255,255,${shadeOpacity})`:`rgba(0,0,0,${shadeOpacity})`);
+    const chrome=shadeMode==='light'
+      ? {bg:'rgba(0,0,0,.13)',strong:'rgba(20,28,36,.40)',hover:'rgba(0,0,0,.20)',text:'#17212b',input:'#fff',placeholder:'rgba(255,255,255,.66)',label:'rgba(20,30,40,.88)',border:'rgba(0,0,0,.15)',shadow:'rgba(0,0,0,.12)'}
+      : {bg:'rgba(255,255,255,.15)',strong:'rgba(241,248,254,.54)',hover:'rgba(255,255,255,.21)',text:'#fff',input:'#173451',placeholder:'rgba(35,65,93,.58)',label:'rgba(255,255,255,.92)',border:'rgba(255,255,255,.12)',shadow:'rgba(5,25,47,.11)'};
+    Object.entries({'--chrome-bg':chrome.bg,'--chrome-bg-strong':chrome.strong,'--chrome-hover':chrome.hover,'--chrome-text':chrome.text,'--chrome-input-text':chrome.input,'--chrome-placeholder':chrome.placeholder,'--chrome-label':chrome.label,'--chrome-border':chrome.border,'--chrome-shadow':chrome.shadow}).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
     document.documentElement.style.setProperty('--background-position',bg.position||'center');
     document.documentElement.style.setProperty('--background-size',bg.size||'cover');
     const scenic=`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b9d9f5"/><stop offset=".48" stop-color="#8ab6d5"/><stop offset="1" stop-color="#355a73"/></linearGradient><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6686a4"/><stop offset="1" stop-color="#24485e"/></linearGradient><linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5c86a3"/><stop offset="1" stop-color="#183c55"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="10"/></filter></defs><rect width="1600" height="1000" fill="url(#s)"/><g opacity=".35" filter="url(#b)"><ellipse cx="1260" cy="210" rx="240" ry="95" fill="#ffd2c2"/><ellipse cx="390" cy="150" rx="300" ry="120" fill="#fff"/></g><path d="M0 560 180 380 320 500 510 245 670 475 810 335 1020 555 1190 365 1390 520 1600 350V720H0Z" fill="#e8f2fa" opacity=".88"/><path d="M0 610 210 420 355 545 515 300 705 520 845 390 1010 575 1205 420 1400 565 1600 405V735H0Z" fill="url(#m)"/><path d="M0 660 170 535 305 630 470 455 650 625 830 510 1020 650 1210 525 1380 620 1600 490V760H0Z" fill="#173f55" opacity=".82"/><rect y="705" width="1600" height="295" fill="url(#l)"/><path d="M0 755Q320 710 590 765T1130 750T1600 770V1000H0Z" fill="#2d627b" opacity=".46"/><g fill="#173a4d" opacity=".88"><path d="M0 750 80 675 120 750 190 655 250 750 320 670 360 750V850H0Z"/><path d="M1240 755 1310 665 1360 755 1420 650 1480 755 1540 670 1600 755V860H1240Z"/></g></svg>`)}`;
@@ -1207,13 +1223,14 @@
     $('#licenseLine').textContent=(state.metadata?.license?.attribution||'Team Portal')+' • Attribution required • no redistributed derivatives';
   }
   function adjustHeroFont(){const el=$('#heroTitle'),n=(el.value||'').trim().length;const px=Math.max(20,Math.min(38,38-Math.max(0,n-13)*0.42));el.style.fontSize=px+'px';}
-  function openSettings(){const bg=state.appearance.background;$('#settingsTitle').value=state.dashboard.title||'';$('#settingsTagline').value=state.dashboard.tagline||'';$('#rgbR').value=bg.color.r;$('#rgbG').value=bg.color.g;$('#rgbB').value=bg.color.b;$('#backgroundPath').value=bg.source==='path'?(bg.imagePath||''):'';$('#overlayRange').value=bg.overlay;$('#overlayValue').textContent=bg.overlay+'%';$('#accentColor').value=state.appearance.accent||'#3d7cff';const note=$('#backgroundSourceNote');if(note){note.textContent=bg.imageData?`Current uploaded image: ${bg.imageName||'embedded image'}. Leave the URL/path field blank to keep it.`:'Browser security prevents retaining a real local filesystem path from a file picker. Uploaded files are embedded in the configuration and the filename is recorded as metadata.';}$('#settingsDrawer').classList.add('show');}
+  function openSettings(){const bg=state.appearance.background;$('#settingsTitle').value=state.dashboard.title||'';$('#settingsTagline').value=state.dashboard.tagline||'';$('#rgbR').value=bg.color.r;$('#rgbG').value=bg.color.g;$('#rgbB').value=bg.color.b;$('#backgroundPath').value=bg.source==='path'?(bg.imagePath||''):'';$('#overlayRange').value=bg.overlay;$('#overlayValue').textContent=bg.overlay+'%';$('#shadeMode').value=bg.shadeMode==='light'?'light':'dark';$('#accentColor').value=state.appearance.accent||'#3d7cff';const note=$('#backgroundSourceNote');if(note){note.textContent=bg.imageData?`Current uploaded image: ${bg.imageName||'embedded image'}. Leave the URL/path field blank to keep it.`:'Browser security prevents retaining a real local filesystem path from a file picker. Uploaded files are embedded in the configuration and the filename is recorded as metadata.';}$('#settingsDrawer').classList.add('show');}
   function closeSettings(){ $('#settingsDrawer').classList.remove('show'); }
   function clampByte(n){return Math.max(0,Math.min(255,Number(n)||0));}
   function syncLiveAppearance(){
     state.appearance.accent=$('#accentColor').value;
     state.appearance.background.color={r:clampByte($('#rgbR').value),g:clampByte($('#rgbG').value),b:clampByte($('#rgbB').value)};
     state.appearance.background.overlay=Number($('#overlayRange').value);
+    state.appearance.background.shadeMode=$('#shadeMode').value;
     applyAppearance();
     saveState();
   }
@@ -1432,7 +1449,7 @@
   $('#exportBtn').addEventListener('click',exportJson); $('#downloadSettings').addEventListener('click',exportJson); $('#buildChromeBookmarks').addEventListener('click',()=>$('#chromeSourceJsonFile').click()); $('#chromeSourceJsonFile').addEventListener('change',e=>{buildChromeBookmarksFromJsonFile(e.target.files[0]);e.target.value='';});
   $('#settingsBtn').addEventListener('click',openSettings); $('#closeSettings').addEventListener('click',closeSettings); $('#applySettings').addEventListener('click',applySettings);
   $('#pickBackground').addEventListener('click',()=>$('#backgroundFile').click()); $('#backgroundFile').addEventListener('change',e=>{backgroundUpload(e.target.files[0]);e.target.value='';}); $('#clearBackground').addEventListener('click',clearBackground);
-  $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
+  $('#overlayRange').addEventListener('input',e=>{$('#overlayValue').textContent=e.target.value+'%';syncLiveAppearance();}); $('#shadeMode').addEventListener('change',syncLiveAppearance); $('#accentColor').addEventListener('input',syncLiveAppearance); ['rgbR','rgbG','rgbB'].forEach(id=>$('#'+id).addEventListener('input',syncLiveAppearance));
   $('#heroTitle').addEventListener('input',()=>{state.dashboard.title=$('#heroTitle').value;adjustHeroFont();saveState();}); $('#heroTitle').addEventListener('change',render);
   $('#resetSession').addEventListener('click',()=>{if(confirm('Reset this session to the default dashboard?')){sessionStorage.removeItem(STORAGE_KEY);state=defaultState();selectedGroupId='favorites';commit('Dashboard reset');closeSettings();}});
   $('#helpBtn').addEventListener('click',()=>alert('Team Portal\n\n• Select a group, then add resources with the top bar.\n• Click a resource once to open it.\n• Click a group header to collapse or expand it.\n• Drag resource tiles to reorder them within a group or move them between groups.\n• Right-click for resource actions.\n• Use group arrows to reorder groups.\n• Import LaunchPane JSON or standard Chrome bookmark HTML files.\n• Import/export JSON for complete configuration portability.\n• Settings can rebuild a Chrome-compatible bookmarks HTML file from a saved LaunchPane JSON export.\n• All edits are stored in browser sessionStorage for this tab/session.\n• License: CC BY-ND 4.0 — attribution required; redistributed modified versions are not permitted.'));
